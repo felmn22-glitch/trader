@@ -66,7 +66,7 @@ export function TradeForm({ trade, onClose }: Props) {
     : 0
 
   const previewPnl = entry && exit && qty
-    ? calcPnl({ ...form, direction: form.direction, entryPrice: entry, exitPrice: exit, quantity: qty, stopLoss: sl, target, result: 'WIN', pnl: 0, pnlPercent: 0, riskReward: 0, id: '', tags: [], duration: 0 })
+    ? calcPnl({ direction: form.direction, entryPrice: entry, exitPrice: exit, quantity: qty, stopLoss: sl, target })
     : null
 
   const previewRR = entry && sl && target
@@ -81,7 +81,7 @@ export function TradeForm({ trade, onClose }: Props) {
     e.preventDefault()
     if (!form.asset || !entry || !exit || !qty) return
 
-    const pnl = calcPnl({ ...form, direction: form.direction, entryPrice: entry, exitPrice: exit, quantity: qty, stopLoss: sl, target, result: 'WIN', pnl: 0, pnlPercent: 0, riskReward: 0, id: '', tags: [], duration: 0 })
+    const pnl = calcPnl({ direction: form.direction, entryPrice: entry, exitPrice: exit, quantity: qty, stopLoss: sl, target })
     const result = getResult(pnl)
     const riskReward = calcRiskReward({ entryPrice: entry, exitPrice: exit, stopLoss: sl, target, direction: form.direction })
 

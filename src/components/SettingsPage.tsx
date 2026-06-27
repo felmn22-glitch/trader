@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Download, Upload, Trash2, AlertTriangle, LogOut, User } from 'lucide-react'
+import { Download, Upload, AlertTriangle, LogOut, User } from 'lucide-react'
 import type { Session } from '@supabase/supabase-js'
 import { useStore } from '../store'
 import { supabase } from '../lib/supabase'

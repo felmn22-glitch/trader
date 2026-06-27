@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   LayoutDashboard, BookOpen, ClipboardList, Shield, Settings,
-  TrendingUp, Menu, X, ChevronRight
+  TrendingUp, X, ChevronRight
 } from 'lucide-react'
 
 interface LayoutProps {

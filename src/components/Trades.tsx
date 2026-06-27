@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Plus, Pencil, Trash2, Search, ChevronUp, ChevronDown, Filter } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search, ChevronUp, ChevronDown } from 'lucide-react'
 import { useStore } from '../store'
 import { TradeForm } from './TradeForm'
 import { formatCurrency, formatDate } from '../utils'

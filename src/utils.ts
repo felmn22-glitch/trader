@@ -1,8 +1,8 @@
 import type { Trade, DayStats } from './types'
-import { format, parseISO, startOfDay } from 'date-fns'
+import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
-export function calcPnl(trade: Omit<Trade, 'id' | 'pnl' | 'pnlPercent' | 'result' | 'riskReward'>) {
+export function calcPnl(trade: Pick<Trade, 'direction' | 'entryPrice' | 'exitPrice' | 'quantity' | 'stopLoss' | 'target'>) {
   const raw = trade.direction === 'LONG'
     ? (trade.exitPrice - trade.entryPrice) * trade.quantity
     : (trade.entryPrice - trade.exitPrice) * trade.quantity

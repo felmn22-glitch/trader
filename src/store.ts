@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { AppState, Trade, JournalEntry, Rule, RiskSettings } from './types'
+import type { AppState, Rule, RiskSettings } from './types'
 import {
   fetchTrades, insertTrade, updateTradeDb, deleteTradeDb,
   fetchJournalEntries, insertJournalEntry, updateJournalEntryDb,

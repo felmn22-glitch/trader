@@ -1,12 +1,12 @@
 import { useMemo } from 'react'
 import { TrendingUp, TrendingDown, Target, AlertTriangle, Award, BarChart2, Zap } from 'lucide-react'
 import {
-  LineChart, Line, AreaChart, Area, BarChart, Bar,
+  AreaChart, Area, BarChart, Bar,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell
 } from 'recharts'
 import { useStore } from '../store'
-import { calcMetrics, groupTradesByDay, formatCurrency, formatDate } from '../utils'
-import { format, subDays, parseISO } from 'date-fns'
+import { calcMetrics, groupTradesByDay, formatCurrency } from '../utils'
+import { format, subDays } from 'date-fns'
 
 function StatCard({
   label, value, sub, color, icon: Icon
@@ -220,7 +220,7 @@ export function Dashboard({ setPage }: { setPage: (p: string) => void }) {
             <BarChart data={emotionWinRate} layout="vertical">
               <XAxis type="number" domain={[0, 100]} tick={{ fill: '#8892a4', fontSize: 10 }} tickLine={false} />
               <YAxis dataKey="emotion" type="category" tick={{ fill: '#8892a4', fontSize: 10 }} tickLine={false} axisLine={false} width={70} />
-              <Tooltip formatter={(v: number) => `${v}%`} contentStyle={{ background: '#1e2235', border: '1px solid #2a2d3e' }} labelStyle={{ color: '#8892a4' }} itemStyle={{ color: '#a78bfa' }} />
+              <Tooltip formatter={(v) => `${v}%`} contentStyle={{ background: '#1e2235', border: '1px solid #2a2d3e' }} labelStyle={{ color: '#8892a4' }} itemStyle={{ color: '#a78bfa' }} />
               <Bar dataKey="winRate" radius={[0, 4, 4, 0]}>
                 {emotionWinRate.map((e, i) => (
                   <Cell key={i} fill={e.winRate >= 60 ? '#00d084' : e.winRate >= 40 ? '#ffd700' : '#ff4d4d'} />

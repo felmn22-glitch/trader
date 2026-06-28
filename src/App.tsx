@@ -37,7 +37,7 @@ export default function App() {
       if (session) loadData()
     })
     return () => subscription.unsubscribe()
-  }, [])
+  }, [loadData])
 
   // Still checking session
   if (session === undefined) return <LoadingScreen />

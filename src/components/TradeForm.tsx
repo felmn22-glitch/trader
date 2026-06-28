@@ -99,7 +99,7 @@ export function TradeForm({ trade, onClose }: Props) {
       emotionalState: form.emotionalState,
       followedPlan: form.followedPlan,
       notes: form.notes,
-      duration: parseInt(form.duration) || 0,
+      duration: parseInt(form.duration || '0', 10) || 0,
       tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean),
       pnl,
       pnlPercent: entry ? (pnl / (entry * qty)) * 100 : 0,

@@ -38,6 +38,7 @@ export function SettingsPage({ session }: Props) {
         alert('Arquivo inválido')
       }
     }
+    reader.onerror = () => alert('Erro ao ler o arquivo. Tente novamente.')
     reader.readAsText(file)
   }
 
@@ -105,7 +106,7 @@ export function SettingsPage({ session }: Props) {
         </div>
         <p className="text-xs" style={{ color: '#8892a4' }}>Estas ações são irreversíveis. Faça backup antes de prosseguir.</p>
         <button
-          onClick={() => { if (confirm('Isso vai desconectar sua conta. Seus dados permanecem no Supabase.')) handleLogout() }}
+          onClick={() => { if (confirm('Isso vai desconectar sua conta. Seus dados permanecem no Supabase.')) void handleLogout() }}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold"
           style={{ background: 'rgba(255,77,77,0.1)', border: '1px solid rgba(255,77,77,0.3)', color: '#ff4d4d' }}
         >

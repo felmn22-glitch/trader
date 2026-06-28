@@ -82,6 +82,7 @@ export function Trades() {
     list.sort((a, b) => {
       const av = a[sortKey] as string | number
       const bv = b[sortKey] as string | number
+      if (av === bv) return 0
       return sortDir === 'asc' ? (av > bv ? 1 : -1) : (av < bv ? 1 : -1)
     })
     return list
@@ -179,9 +180,9 @@ export function Trades() {
           <p style={{ fontSize: 13 }}>Registre sua primeira operação clicando em "Nova Operação"</p>
         </div>
       ) : isMobile ? (
-        <MobileCards trades={filtered} onEdit={t => setEditing(t)} onDelete={id => { if (confirm('Excluir operação?')) deleteTrade(id) }} />
+        <MobileCards trades={filtered} onEdit={t => setEditing(t)} onDelete={id => { if (confirm('Excluir operação?')) void deleteTrade(id) }} />
       ) : (
-        <DesktopTable trades={filtered} onEdit={t => setEditing(t)} onDelete={id => { if (confirm('Excluir operação?')) deleteTrade(id) }} sort={sort} sortKey={sortKey} sortDir={sortDir} totalPnl={totalPnl} />
+        <DesktopTable trades={filtered} onEdit={t => setEditing(t)} onDelete={id => { if (confirm('Excluir operação?')) void deleteTrade(id) }} sort={sort} sortKey={sortKey} sortDir={sortDir} totalPnl={totalPnl} />
       )}
     </div>
   )

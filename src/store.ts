@@ -79,13 +79,25 @@ export const useStore = create<StoreState>((set, get) => ({
   },
 
   updateTrade: async (id, updated) => {
+    const prev = get().trades
     set((s) => ({ trades: s.trades.map((t) => (t.id === id ? { ...t, ...updated } : t)) }))
-    await updateTradeDb(id, updated)
+    try {
+      await updateTradeDb(id, updated)
+    } catch (err) {
+      set({ trades: prev })
+      console.error('Erro ao atualizar trade:', err)
+    }
   },
 
   deleteTrade: async (id) => {
+    const prev = get().trades
     set((s) => ({ trades: s.trades.filter((t) => t.id !== id) }))
-    await deleteTradeDb(id)
+    try {
+      await deleteTradeDb(id)
+    } catch (err) {
+      set({ trades: prev })
+      console.error('Erro ao deletar trade:', err)
+    }
   },
 
   addJournalEntry: async (entry) => {
@@ -94,10 +106,16 @@ export const useStore = create<StoreState>((set, get) => ({
   },
 
   updateJournalEntry: async (id, updated) => {
+    const prev = get().journalEntries
     set((s) => ({
       journalEntries: s.journalEntries.map((e) => (e.id === id ? { ...e, ...updated } : e)),
     }))
-    await updateJournalEntryDb(id, updated)
+    try {
+      await updateJournalEntryDb(id, updated)
+    } catch (err) {
+      set({ journalEntries: prev })
+      console.error('Erro ao atualizar journal:', err)
+    }
   },
 
   addRule: async (rule) => {

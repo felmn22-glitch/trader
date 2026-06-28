@@ -171,7 +171,7 @@ export function Dashboard({ setPage }: { setPage: (p: string) => void }) {
               <div
                 className="h-2 rounded-full transition-all"
                 style={{
-                  width: `${Math.min(100, Math.max(0, (todayPnl / riskSettings.dailyTarget) * 100))}%`,
+                  width: `${riskSettings.dailyTarget > 0 ? Math.min(100, Math.max(0, (todayPnl / riskSettings.dailyTarget) * 100)) : 0}%`,
                   background: todayPnl >= 0 ? 'linear-gradient(90deg,#6c63ff,#00d084)' : '#ff4d4d',
                 }}
               />

@@ -196,6 +196,8 @@ function riskToDb(s: RiskSettings) {
     max_positions: s.maxPositions,
     daily_target: s.dailyTarget,
     daily_target_percent: s.dailyTargetPercent,
+    account_type: s.accountType,
+    prop_firm_split: s.propFirmSplit,
   }
 }
 

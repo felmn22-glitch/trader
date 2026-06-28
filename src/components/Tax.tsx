@@ -2,8 +2,19 @@ import { useMemo, useState } from 'react'
 import { useStore } from '../store'
 import { formatCurrency } from '../utils'
 import { useIsMobile } from '../hooks'
-import { ChevronDown, ChevronUp, AlertTriangle, CheckCircle, Info, Building2, User } from 'lucide-react'
+import { ChevronDown, ChevronUp, AlertTriangle, CheckCircle, Info, Building2, User, Download, Calendar } from 'lucide-react'
 import type { Trade } from '../types'
+
+function darfDueDate(month: string): string {
+  const [year, m] = month.split('-').map(Number)
+  const nextMonth = m === 12 ? 1 : m + 1
+  const nextYear = m === 12 ? year + 1 : year
+  const last = new Date(nextYear, nextMonth, 0)
+  const dow = last.getDay()
+  if (dow === 0) last.setDate(last.getDate() - 2)
+  else if (dow === 6) last.setDate(last.getDate() - 1)
+  return last.toLocaleDateString('pt-BR')
+}
 
 const MONTHS_PT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
 
@@ -24,6 +35,24 @@ interface MonthResult {
   irDue: number
   darf: number
   newCarry: number
+}
+
+function exportTaxCSV(data: MonthResult[]) {
+  const headers = ['Mês', 'Operações', 'Lucro Bruto', 'Prejuízo', 'Saldo Mensal', 'Prej.Compensado', 'Base de Cálculo', 'IRRF (1%)', 'IR Devido (20%)', 'DARF a Pagar', 'Novo C.F.', 'Venc. DARF']
+  const rows = data.map(m => [
+    fmtMonth(m.month), m.tradeCount,
+    m.grossProfit.toFixed(2), m.grossLoss.toFixed(2),
+    m.netBeforeCarry.toFixed(2), m.carryForward.toFixed(2),
+    m.netAfterCarry.toFixed(2), m.irrf.toFixed(2),
+    m.irDue.toFixed(2), m.darf.toFixed(2),
+    m.newCarry.toFixed(2), m.darf > 0 ? darfDueDate(m.month) : '',
+  ])
+  const csv = [headers, ...rows].map(r => r.join(',')).join('\n')
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url; a.download = `imposto-daytrade-${new Date().toISOString().slice(0, 7)}.csv`; a.click()
+  URL.revokeObjectURL(url)
 }
 
 function calcTax(trades: Trade[], split: number): MonthResult[] {
@@ -177,6 +206,30 @@ export function Tax() {
           ))}
         </div>
       )}
+
+      {/* Next DARF due date + export */}
+      {monthlyData.length > 0 && (() => {
+        const pending = [...monthlyData].reverse().find(m => m.darf > 0)
+        return (
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'stretch' }}>
+            {pending && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 18px', borderRadius: 12, background: 'rgba(255,77,77,0.06)', border: '1px solid rgba(255,77,77,0.2)', flex: 1, minWidth: 220 }}>
+                <Calendar size={18} color="#ff4d4d" style={{ flexShrink: 0 }} />
+                <div>
+                  <p style={{ margin: 0, fontSize: 12, color: '#8892a4' }}>Próximo vencimento DARF ({fmtMonth(pending.month)})</p>
+                  <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#ff6b6b', fontFamily: 'monospace' }}>{darfDueDate(pending.month)}</p>
+                </div>
+              </div>
+            )}
+            <button
+              onClick={() => exportTaxCSV(monthlyData)}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 18px', borderRadius: 12, border: '1px solid #2a2d3e', background: '#12141f', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#a78bfa' }}
+            >
+              <Download size={15} /> Exportar relatório CSV
+            </button>
+          </div>
+        )
+      })()}
 
       {/* Monthly table */}
       {monthlyData.length === 0 ? (

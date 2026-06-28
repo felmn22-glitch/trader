@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Plus, Pencil, Trash2, Search, ChevronUp, ChevronDown, Download } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search, ChevronUp, ChevronDown, Download, ShieldAlert, ShieldOff } from 'lucide-react'
 import { useStore } from '../store'
 import { TradeForm } from './TradeForm'
 import { formatCurrency, formatDate } from '../utils'
@@ -58,7 +58,7 @@ function formatMonth(ym: string) {
 }
 
 export function Trades() {
-  const { trades, deleteTrade } = useStore()
+  const { trades, deleteTrade, riskSettings } = useStore()
   const isMobile = useIsMobile()
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<Trade | undefined>()
@@ -67,6 +67,13 @@ export function Trades() {
   const [filterMonth, setFilterMonth] = useState('all')
   const [sortKey, setSortKey] = useState<keyof Trade>('date')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
+  const [overrideProtection, setOverrideProtection] = useState(false)
+
+  const todayStr = new Date().toISOString().slice(0, 10)
+  const todayPnl = useMemo(() => trades.filter(t => t.date.startsWith(todayStr)).reduce((s, t) => s + t.pnl, 0), [trades, todayStr])
+  const dailyLimitHit = riskSettings.maxDailyLoss > 0 && todayPnl <= -riskSettings.maxDailyLoss
+  const targetHit = riskSettings.dailyTarget > 0 && todayPnl >= riskSettings.dailyTarget
+  const isBlocked = (dailyLimitHit || targetHit) && !overrideProtection
 
   const months = useMemo(() =>
     [...new Set(trades.map(t => t.date.slice(0, 7)))].sort().reverse(), [trades])
@@ -113,6 +120,27 @@ export function Trades() {
         <TradeForm trade={editing} onClose={() => { setShowForm(false); setEditing(undefined) }} />
       )}
 
+      {/* Protection Mode Banner */}
+      {(dailyLimitHit || targetHit) && (
+        <div style={{ padding: '14px 18px', borderRadius: 14, background: overrideProtection ? 'rgba(74,81,112,0.2)' : (dailyLimitHit ? 'rgba(255,77,77,0.08)' : 'rgba(0,208,132,0.08)'), border: `1px solid ${overrideProtection ? '#2a2d3e' : (dailyLimitHit ? 'rgba(255,77,77,0.3)' : 'rgba(0,208,132,0.3)')}`, display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+          <ShieldAlert size={22} color={overrideProtection ? '#4a5170' : (dailyLimitHit ? '#ff4d4d' : '#00d084')} style={{ flexShrink: 0 }} />
+          <div style={{ flex: 1 }}>
+            <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: overrideProtection ? '#4a5170' : (dailyLimitHit ? '#ff6b6b' : '#00d084') }}>
+              {dailyLimitHit ? 'Limite de perda diária atingido' : 'Meta diária atingida'} — Modo Proteção {overrideProtection ? 'desativado' : 'ativo'}
+            </p>
+            <p style={{ margin: '2px 0 0', fontSize: 12, color: '#4a5170' }}>
+              {dailyLimitHit ? `P&L hoje: ${formatCurrency(todayPnl)} · Limite: −${formatCurrency(riskSettings.maxDailyLoss)}` : `P&L hoje: +${formatCurrency(todayPnl)} · Meta: ${formatCurrency(riskSettings.dailyTarget)}`}
+            </p>
+          </div>
+          <button
+            onClick={() => setOverrideProtection(o => !o)}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 10, border: `1px solid ${overrideProtection ? '#2a2d3e' : '#4a5170'}`, background: 'transparent', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: overrideProtection ? '#4a5170' : '#8892a4', whiteSpace: 'nowrap' }}
+          >
+            <ShieldOff size={13} /> {overrideProtection ? 'Reativar proteção' : 'Ignorar e operar'}
+          </button>
+        </div>
+      )}
+
       {/* Header row */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
@@ -130,7 +158,11 @@ export function Trades() {
               <Download size={14} /> CSV
             </button>
           )}
-          <button onClick={() => setShowForm(true)} style={btnStyle}>
+          <button
+            onClick={() => !isBlocked && setShowForm(true)}
+            style={{ ...btnStyle, opacity: isBlocked ? 0.45 : 1, cursor: isBlocked ? 'not-allowed' : 'pointer', background: isBlocked ? '#1a1d2e' : 'linear-gradient(135deg,#6c63ff,#a78bfa)', border: isBlocked ? '1px solid #2a2d3e' : 'none', color: isBlocked ? '#4a5170' : '#fff', boxShadow: isBlocked ? 'none' : '0 4px 14px rgba(108,99,255,0.3)' }}
+            title={isBlocked ? (dailyLimitHit ? 'Limite de perda diária atingido' : 'Meta diária atingida') : ''}
+          >
             <Plus size={16} /> {isMobile ? 'Nova' : 'Nova Operação'}
           </button>
         </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X } from 'lucide-react'
+import { X, AlertTriangle } from 'lucide-react'
 import { useStore } from '../store'
 import { calcPnl, calcRiskReward, getResult, calcPositionSize, today } from '../utils'
 import type { Trade, Direction, EmotionalState, MarketSession } from '../types'
@@ -35,7 +35,9 @@ const inputCls = "w-full px-3 py-2 rounded-lg text-sm text-white outline-none fo
 const inputStyle = { background: '#12141f', border: '1px solid #2a2d3e' }
 
 export function TradeForm({ trade, onClose }: Props) {
-  const { addTrade, updateTrade, riskSettings } = useStore()
+  const { addTrade, updateTrade, riskSettings, trades } = useStore()
+  const todayCount = !trade ? trades.filter(t => t.date.startsWith(today())).length : 0
+  const exceedsPositions = !trade && riskSettings.maxPositions > 0 && todayCount >= riskSettings.maxPositions
 
   const [form, setForm] = useState({
     date: trade?.date?.slice(0, 10) ?? today(),
@@ -126,6 +128,14 @@ export function TradeForm({ trade, onClose }: Props) {
         </div>
 
         <form onSubmit={submit} className="p-5 space-y-4">
+          {exceedsPositions && (
+            <div className="flex items-start gap-3 p-3 rounded-xl" style={{ background: 'rgba(255,215,0,0.08)', border: '1px solid rgba(255,215,0,0.25)' }}>
+              <AlertTriangle size={16} color="#ffd700" style={{ flexShrink: 0, marginTop: 1 }} />
+              <p className="text-xs" style={{ color: '#ffd700' }}>
+                Você já tem <strong>{todayCount}</strong> operações hoje — limite de <strong>{riskSettings.maxPositions}</strong> posições configurado. Você ainda pode registrar, mas avalie o risco.
+              </p>
+            </div>
+          )}
           {/* Direction toggle */}
           <div className="flex gap-2">
             {(['LONG', 'SHORT'] as Direction[]).map((d) => (

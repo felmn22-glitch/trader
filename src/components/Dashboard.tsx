@@ -42,8 +42,12 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   )
 }
 
+const sessionLabel: Record<string, string> = {
+  'pre-market': 'Pré-mercado', opening: 'Abertura', 'mid-day': 'Meio-dia', closing: 'Fechamento', 'after-hours': 'After hours',
+}
+
 export function Dashboard({ setPage }: { setPage: (p: string) => void }) {
-  const { trades, riskSettings } = useStore()
+  const { trades, riskSettings, journalEntries } = useStore()
   const isMobile = useIsMobile()
   const metrics = useMemo(() => calcMetrics(trades), [trades])
   const dayStats = useMemo(() => groupTradesByDay(trades), [trades])
@@ -79,6 +83,50 @@ export function Dashboard({ setPage }: { setPage: (p: string) => void }) {
       winRate: Math.round((wins / total) * 100),
     }))
   }, [trades])
+
+  const assetPerf = useMemo(() => {
+    const map: Record<string, { pnl: number; total: number; wins: number }> = {}
+    for (const t of trades) {
+      if (!map[t.asset]) map[t.asset] = { pnl: 0, total: 0, wins: 0 }
+      map[t.asset].pnl += t.pnl
+      map[t.asset].total++
+      if (t.result === 'WIN') map[t.asset].wins++
+    }
+    return Object.entries(map)
+      .map(([asset, { pnl, total, wins }]) => ({ asset, pnl: Math.round(pnl * 100) / 100, total, wr: Math.round((wins / total) * 100) }))
+      .sort((a, b) => b.pnl - a.pnl)
+      .slice(0, 6)
+  }, [trades])
+
+  const sessionPerf = useMemo(() => {
+    const map: Record<string, { wins: number; total: number }> = {}
+    for (const t of trades) {
+      const s = t.session || 'opening'
+      if (!map[s]) map[s] = { wins: 0, total: 0 }
+      map[s].total++
+      if (t.result === 'WIN') map[s].wins++
+    }
+    return Object.entries(map)
+      .map(([session, { wins, total }]) => ({ session: sessionLabel[session] || session, winRate: Math.round((wins / total) * 100), total }))
+      .sort((a, b) => b.winRate - a.winRate)
+  }, [trades])
+
+  const sleepPerf = useMemo(() => {
+    const map: Record<number, { wins: number; total: number }> = {}
+    for (const entry of journalEntries) {
+      const dayTrades = trades.filter(t => t.date.startsWith(entry.date))
+      if (!dayTrades.length) continue
+      const sleep = entry.preMarket.sleepQuality
+      if (!map[sleep]) map[sleep] = { wins: 0, total: 0 }
+      for (const t of dayTrades) {
+        map[sleep].total++
+        if (t.result === 'WIN') map[sleep].wins++
+      }
+    }
+    return Object.entries(map)
+      .map(([sleep, { wins, total }]) => ({ sleep: `${sleep}★`, winRate: Math.round((wins / total) * 100) }))
+      .sort((a, b) => a.sleep.localeCompare(b.sleep))
+  }, [trades, journalEntries])
 
   const setupPerf = useMemo(() => {
     const map: Record<string, { pnl: number; total: number }> = {}
@@ -301,7 +349,75 @@ export function Dashboard({ setPage }: { setPage: (p: string) => void }) {
           <p className="text-xs" style={{ color: '#8892a4' }}>Média Perda</p>
           <p className="text-xl font-bold" style={{ color: '#ff4d4d' }}>{formatCurrency(metrics!.avgLoss)}</p>
         </div>
+        <div className="text-right">
+          <p className="text-xs" style={{ color: '#8892a4' }}>Perdas Consec.</p>
+          <p className="text-xl font-bold" style={{ color: metrics!.maxConsecutiveLosses >= 5 ? '#ff4d4d' : metrics!.maxConsecutiveLosses >= 3 ? '#ffd700' : '#8892a4' }}>{metrics!.maxConsecutiveLosses}</p>
+        </div>
       </div>
+
+      {/* Asset performance + Session win rate */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="rounded-xl p-5" style={{ background: '#1a1d2e', border: '1px solid #1e2235' }}>
+          <p className="text-sm font-semibold mb-4 text-white">Desempenho por Ativo</p>
+          {assetPerf.length === 0 ? (
+            <p className="text-xs" style={{ color: '#8892a4' }}>Nenhum dado disponível</p>
+          ) : (
+            <div className="space-y-3">
+              {assetPerf.map((a) => (
+                <div key={a.asset} className="flex items-center gap-3">
+                  <span className="text-xs font-bold text-white" style={{ minWidth: 56, fontFamily: 'monospace' }}>{a.asset}</span>
+                  <div className="flex-1 h-2 rounded-full" style={{ background: '#12141f' }}>
+                    <div className="h-2 rounded-full" style={{ width: `${a.wr}%`, background: a.pnl >= 0 ? 'linear-gradient(90deg,#6c63ff,#00d084)' : '#ff4d4d' }} />
+                  </div>
+                  <span className="text-xs" style={{ color: '#4a5170', minWidth: 40, textAlign: 'right' }}>{a.wr}% WR</span>
+                  <span className="text-sm font-bold" style={{ color: a.pnl >= 0 ? '#00d084' : '#ff4d4d', minWidth: 80, textAlign: 'right', fontFamily: 'monospace' }}>{formatCurrency(a.pnl)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-xl p-5" style={{ background: '#1a1d2e', border: '1px solid #1e2235' }}>
+          <p className="text-sm font-semibold mb-4 text-white">Win Rate por Sessão</p>
+          {sessionPerf.length === 0 ? (
+            <p className="text-xs" style={{ color: '#8892a4' }}>Nenhum dado disponível</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={sessionPerf} layout="vertical">
+                <XAxis type="number" domain={[0, 100]} tick={{ fill: '#8892a4', fontSize: 10 }} tickLine={false} tickFormatter={(v) => `${v}%`} />
+                <YAxis dataKey="session" type="category" tick={{ fill: '#8892a4', fontSize: 10 }} tickLine={false} axisLine={false} width={90} />
+                <Tooltip formatter={(v) => `${v}%`} contentStyle={{ background: '#1e2235', border: '1px solid #2a2d3e' }} labelStyle={{ color: '#8892a4' }} itemStyle={{ color: '#a78bfa' }} />
+                <Bar dataKey="winRate" radius={[0, 4, 4, 0]}>
+                  {sessionPerf.map((s, i) => (
+                    <Cell key={i} fill={s.winRate >= 60 ? '#00d084' : s.winRate >= 40 ? '#ffd700' : '#ff4d4d'} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      </div>
+
+      {/* Sleep × Win Rate (only shown when journal data exists) */}
+      {sleepPerf.length >= 2 && (
+        <div className="rounded-xl p-5" style={{ background: '#1a1d2e', border: '1px solid #1e2235' }}>
+          <p className="text-sm font-semibold mb-1 text-white">Sono × Win Rate</p>
+          <p className="text-xs mb-4" style={{ color: '#4a5170' }}>Correlação entre qualidade do sono (diário) e win rate nas operações do dia</p>
+          <ResponsiveContainer width="100%" height={140}>
+            <BarChart data={sleepPerf}>
+              <CartesianGrid stroke="#1e2235" strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="sleep" tick={{ fill: '#8892a4', fontSize: 11 }} tickLine={false} />
+              <YAxis domain={[0, 100]} tick={{ fill: '#8892a4', fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}%`} />
+              <Tooltip formatter={(v) => `${v}%`} contentStyle={{ background: '#1e2235', border: '1px solid #2a2d3e' }} labelStyle={{ color: '#8892a4' }} itemStyle={{ color: '#6c63ff' }} />
+              <Bar dataKey="winRate" radius={[4, 4, 0, 0]}>
+                {sleepPerf.map((s, i) => (
+                  <Cell key={i} fill={s.winRate >= 60 ? '#00d084' : s.winRate >= 40 ? '#ffd700' : '#ff4d4d'} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
     </div>
   )
 }

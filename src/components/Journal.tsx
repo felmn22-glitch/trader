@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, ChevronDown, ChevronUp, Star, BookOpen } from 'lucide-react'
+import { Plus, ChevronDown, ChevronUp, Star, BookOpen, Pencil } from 'lucide-react'
 import { useIsMobile } from '../hooks'
 import { useStore } from '../store'
 import { today, formatDate } from '../utils'
@@ -29,7 +29,7 @@ function StarRating({ value, onChange }: { value: number; onChange: (v: 1|2|3|4|
   )
 }
 
-function EntryCard({ entry }: { entry: JournalEntry }) {
+function EntryCard({ entry, onEdit }: { entry: JournalEntry; onEdit: (e: JournalEntry) => void }) {
   const [open, setOpen] = useState(false)
   const { preMarket, postMarket } = entry
 
@@ -60,6 +60,14 @@ function EntryCard({ entry }: { entry: JournalEntry }) {
               {[1,2,3,4,5].map((n) => <Star key={n} size={14} fill={n <= postMarket.overallRating ? '#ffd700' : 'none'} color={n <= postMarket.overallRating ? '#ffd700' : '#3a3d5e'} />)}
             </div>
           )}
+          <button
+            className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+            style={{ border: '1px solid #2a2d3e' }}
+            onClick={(ev) => { ev.stopPropagation(); onEdit(entry) }}
+            title="Editar entrada"
+          >
+            <Pencil size={13} color="#a78bfa" />
+          </button>
           {open ? <ChevronUp size={16} color="#8892a4" /> : <ChevronDown size={16} color="#8892a4" />}
         </div>
       </button>
@@ -98,25 +106,18 @@ function EntryCard({ entry }: { entry: JournalEntry }) {
   )
 }
 
-function JournalForm({ onClose }: { onClose: () => void }) {
-  const { addJournalEntry } = useStore()
-  const [form, setForm] = useState<Omit<JournalEntry, 'id'>>({
-    date: today(),
-    preMarket: {
-      marketBias: 'neutral',
-      keyLevels: '',
-      plan: '',
-      mentalState: 'calm',
-      sleepQuality: 3,
-    },
-    postMarket: {
-      summary: '',
-      lessons: '',
-      improvements: '',
-      followedRules: true,
-      overallRating: 3,
-    },
-  })
+function JournalForm({ onClose, entry }: { onClose: () => void; entry?: JournalEntry }) {
+  const { addJournalEntry, updateJournalEntry } = useStore()
+  const isEditing = !!entry
+  const [form, setForm] = useState<Omit<JournalEntry, 'id'>>(
+    entry
+      ? { date: entry.date, preMarket: { ...entry.preMarket }, postMarket: { ...entry.postMarket } }
+      : {
+          date: today(),
+          preMarket: { marketBias: 'neutral', keyLevels: '', plan: '', mentalState: 'calm', sleepQuality: 3 },
+          postMarket: { summary: '', lessons: '', improvements: '', followedRules: true, overallRating: 3 },
+        }
+  )
 
   function set(section: 'preMarket' | 'postMarket', field: string, value: unknown) {
     setForm((f) => ({ ...f, [section]: { ...f[section], [field]: value } }))
@@ -124,7 +125,11 @@ function JournalForm({ onClose }: { onClose: () => void }) {
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
-    void addJournalEntry(form)
+    if (isEditing && entry) {
+      void updateJournalEntry(entry.id, form)
+    } else {
+      void addJournalEntry(form)
+    }
     onClose()
   }
 
@@ -132,7 +137,7 @@ function JournalForm({ onClose }: { onClose: () => void }) {
     <div className="fixed inset-0 flex items-center justify-center z-50" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}>
       <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl" style={{ background: '#1a1d2e', border: '1px solid #2a2d3e' }}>
         <div className="flex items-center justify-between p-5" style={{ borderBottom: '1px solid #1e2235' }}>
-          <h2 className="text-lg font-bold text-white">Nova Entrada no Diário</h2>
+          <h2 className="text-lg font-bold text-white">{isEditing ? 'Editar Entrada' : 'Nova Entrada no Diário'}</h2>
           <button onClick={onClose} className="text-sm" style={{ color: '#8892a4' }}>Fechar</button>
         </div>
         <form onSubmit={submit} className="p-5 space-y-6">
@@ -209,7 +214,9 @@ function JournalForm({ onClose }: { onClose: () => void }) {
 
           <div className="flex gap-3">
             <button type="button" onClick={onClose} className="flex-1 py-3 rounded-xl text-sm font-semibold" style={{ border: '1px solid #2a2d3e', color: '#8892a4' }}>Cancelar</button>
-            <button type="submit" className="flex-1 py-3 rounded-xl text-sm font-bold text-white" style={{ background: 'linear-gradient(135deg,#6c63ff,#a78bfa)' }}>Salvar Entrada</button>
+            <button type="submit" className="flex-1 py-3 rounded-xl text-sm font-bold text-white" style={{ background: 'linear-gradient(135deg,#6c63ff,#a78bfa)' }}>
+              {isEditing ? 'Salvar Alterações' : 'Salvar Entrada'}
+            </button>
           </div>
         </form>
       </div>
@@ -221,15 +228,26 @@ export function Journal() {
   const { journalEntries } = useStore()
   const isMobile = useIsMobile()
   const [showForm, setShowForm] = useState(false)
+  const [editEntry, setEditEntry] = useState<JournalEntry | undefined>()
   const pad = isMobile ? '12px 14px 80px' : '20px 28px 28px'
+
+  function handleEdit(entry: JournalEntry) {
+    setEditEntry(entry)
+    setShowForm(true)
+  }
+
+  function handleClose() {
+    setShowForm(false)
+    setEditEntry(undefined)
+  }
 
   return (
     <div style={{ padding: pad }} className="space-y-4">
-      {showForm && <JournalForm onClose={() => setShowForm(false)} />}
+      {showForm && <JournalForm onClose={handleClose} entry={editEntry} />}
 
       <div className="flex items-center justify-between">
         <p className="text-sm" style={{ color: '#5a6280' }}>Registro diário da sua evolução</p>
-        <button onClick={() => setShowForm(true)} className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: 'linear-gradient(135deg,#6c63ff,#a78bfa)', boxShadow: '0 4px 16px rgba(108,99,255,0.3)' }}>
+        <button onClick={() => { setEditEntry(undefined); setShowForm(true) }} className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: 'linear-gradient(135deg,#6c63ff,#a78bfa)', boxShadow: '0 4px 16px rgba(108,99,255,0.3)' }}>
           <Plus size={16} /> Nova Entrada
         </button>
       </div>
@@ -242,7 +260,7 @@ export function Journal() {
         </div>
       ) : (
         <div className="space-y-3">
-          {journalEntries.map((e) => <EntryCard key={e.id} entry={e} />)}
+          {journalEntries.map((e) => <EntryCard key={e.id} entry={e} onEdit={handleEdit} />)}
         </div>
       )}
     </div>

@@ -75,11 +75,15 @@ export function calcMetrics(trades: Trade[]) {
   let peak = 0
   let running = 0
   let maxDD = 0
+  let curLoss = 0
+  let maxConsLoss = 0
   for (const t of [...trades].sort((a, b) => a.date.localeCompare(b.date))) {
     running += t.pnl
     if (running > peak) peak = running
     const dd = peak - running
     if (dd > maxDD) maxDD = dd
+    if (t.result === 'LOSS') { curLoss++; if (curLoss > maxConsLoss) maxConsLoss = curLoss }
+    else curLoss = 0
   }
 
   const cumulativePnl: { date: string; pnl: number }[] = []
@@ -99,6 +103,7 @@ export function calcMetrics(trades: Trade[]) {
     avgLoss: Math.round(avgLoss * 100) / 100,
     profitFactor: Math.round(profitFactor * 100) / 100,
     maxDrawdown: Math.round(maxDD * 100) / 100,
+    maxConsecutiveLosses: maxConsLoss,
     expectancy: Math.round(((winRate / 100) * avgWin + (1 - winRate / 100) * avgLoss) * 100) / 100,
     cumulativePnl,
     followedPlanRate: Math.round((trades.filter((t) => t.followedPlan).length / trades.length) * 100),

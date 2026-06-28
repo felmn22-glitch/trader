@@ -38,10 +38,13 @@ export function groupTradesByDay(trades: Trade[]): DayStats[] {
       const breakevens = dayTrades.filter((t) => t.result === 'BREAKEVEN').length
       const pnls = dayTrades.map((t) => t.pnl)
       let running = 0
+      let peak = 0
       let maxDD = 0
       for (const p of pnls) {
         running += p
-        if (running < maxDD) maxDD = running
+        if (running > peak) peak = running
+        const dd = peak - running
+        if (dd > maxDD) maxDD = dd
       }
       return {
         date,

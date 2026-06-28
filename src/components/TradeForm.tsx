@@ -109,9 +109,9 @@ export function TradeForm({ trade, onClose }: Props) {
     }
 
     if (trade) {
-      updateTrade(trade.id, payload)
+      void updateTrade(trade.id, payload)
     } else {
-      addTrade(payload)
+      void addTrade(payload)
     }
     onClose()
   }

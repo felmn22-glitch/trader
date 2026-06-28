@@ -124,7 +124,7 @@ function JournalForm({ onClose }: { onClose: () => void }) {
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
-    addJournalEntry(form)
+    void addJournalEntry(form)
     onClose()
   }
 

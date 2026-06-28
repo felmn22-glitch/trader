@@ -137,7 +137,7 @@ export function Rules() {
               </div>
               {rule.description && <p className="text-xs mt-1" style={{ color: '#8892a4' }}>{rule.description}</p>}
             </div>
-            <button onClick={() => { if (confirm('Excluir esta regra?')) deleteRule(rule.id) }} className="p-1.5 rounded hover:bg-white/5">
+            <button onClick={() => { if (confirm('Excluir esta regra?')) void deleteRule(rule.id) }} className="p-1.5 rounded hover:bg-white/5">
               <Trash2 size={14} color="#ff4d4d" />
             </button>
           </div>

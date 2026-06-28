@@ -27,6 +27,8 @@ const defaultRiskSettings: RiskSettings = {
   maxPositions: 2,
   dailyTarget: 200,
   dailyTargetPercent: 2,
+  accountType: 'proprio',
+  propFirmSplit: 80,
 }
 
 interface StoreState extends AppState {

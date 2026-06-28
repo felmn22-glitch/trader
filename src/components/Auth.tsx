@@ -35,38 +35,42 @@ export function Auth() {
     }
   }
 
-  const inputCls = "w-full px-4 py-3 rounded-xl text-sm text-white outline-none focus:ring-2 focus:ring-purple-500 pl-11"
-  const inputStyle = { background: '#12141f', border: '1px solid #2a2d3e' }
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    padding: '12px 44px',
+    borderRadius: 12,
+    fontSize: 14,
+    color: '#e8eaf0',
+    background: '#0d0f1a',
+    border: '1px solid #3a3d5e',
+    outline: 'none',
+    boxSizing: 'border-box',
+  }
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center p-4"
-      style={{ background: 'linear-gradient(135deg, #0f1117 0%, #1a1d2e 100%)' }}
-    >
-      <div className="w-full max-w-md">
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'linear-gradient(135deg, #07080f 0%, #0f1117 50%, #131627 100%)' }}>
+      <div style={{ width: '100%', maxWidth: 420 }}>
         {/* Logo */}
-        <div className="flex flex-col items-center mb-8">
-          <div
-            className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
-            style={{ background: 'linear-gradient(135deg,#6c63ff,#a78bfa)' }}
-          >
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 32 }}>
+          <div style={{ width: 56, height: 56, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16, background: 'linear-gradient(135deg,#6c63ff,#a78bfa)' }}>
             <TrendingUp size={28} color="#fff" />
           </div>
-          <h1 className="text-2xl font-bold text-white">TraderPro</h1>
-          <p className="text-sm mt-1" style={{ color: '#8892a4' }}>
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#fff', margin: 0 }}>TraderPro</h1>
+          <p style={{ fontSize: 14, color: '#8892a4', marginTop: 6 }}>
             {mode === 'login' ? 'Acesse sua conta' : mode === 'signup' ? 'Crie sua conta' : 'Recuperar senha'}
           </p>
         </div>
 
         {/* Card */}
-        <div className="rounded-2xl p-8" style={{ background: '#1a1d2e', border: '1px solid #2a2d3e' }}>
-          <form onSubmit={handleSubmit} className="space-y-4">
+        <div style={{ borderRadius: 20, padding: 32, background: '#1a1d2e', border: '1px solid #3a3d5e', boxShadow: '0 24px 80px rgba(0,0,0,0.6)' }}>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {/* Email */}
-            <div className="relative">
-              <Mail size={16} color="#8892a4" className="absolute left-3.5 top-3.5" />
+            <div style={{ position: 'relative' }}>
+              <span style={{ position: 'absolute', left: 14, top: 14, pointerEvents: 'none' }}>
+                <Mail size={16} color="#6b7280" />
+              </span>
               <input
                 type="email"
-                className={inputCls}
                 style={inputStyle}
                 placeholder="seu@email.com"
                 value={email}
@@ -78,12 +82,13 @@ export function Auth() {
 
             {/* Password */}
             {mode !== 'forgot' && (
-              <div className="relative">
-                <Lock size={16} color="#8892a4" className="absolute left-3.5 top-3.5" />
+              <div style={{ position: 'relative' }}>
+                <span style={{ position: 'absolute', left: 14, top: 14, pointerEvents: 'none' }}>
+                  <Lock size={16} color="#6b7280" />
+                </span>
                 <input
                   type={showPass ? 'text' : 'password'}
-                  className={`${inputCls} pr-11`}
-                  style={inputStyle}
+                  style={{ ...inputStyle, paddingRight: 44 }}
                   placeholder="Sua senha"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -93,24 +98,21 @@ export function Auth() {
                 />
                 <button
                   type="button"
-                  className="absolute right-3.5 top-3.5"
+                  style={{ position: 'absolute', right: 14, top: 14, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                   onClick={() => setShowPass(!showPass)}
                 >
-                  {showPass
-                    ? <EyeOff size={16} color="#8892a4" />
-                    : <Eye size={16} color="#8892a4" />}
+                  {showPass ? <EyeOff size={16} color="#6b7280" /> : <Eye size={16} color="#6b7280" />}
                 </button>
               </div>
             )}
 
             {/* Forgot link */}
             {mode === 'login' && (
-              <div className="text-right">
+              <div style={{ textAlign: 'right' }}>
                 <button
                   type="button"
                   onClick={() => setMode('forgot')}
-                  className="text-xs"
-                  style={{ color: '#6c63ff' }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: '#6c63ff' }}
                 >
                   Esqueceu a senha?
                 </button>
@@ -119,12 +121,12 @@ export function Auth() {
 
             {/* Error / Message */}
             {error && (
-              <div className="p-3 rounded-lg text-sm" style={{ background: 'rgba(255,77,77,0.1)', border: '1px solid rgba(255,77,77,0.3)', color: '#ff4d4d' }}>
+              <div style={{ padding: '10px 14px', borderRadius: 10, fontSize: 13, background: 'rgba(255,77,77,0.1)', border: '1px solid rgba(255,77,77,0.3)', color: '#ff4d4d' }}>
                 {error}
               </div>
             )}
             {message && (
-              <div className="p-3 rounded-lg text-sm" style={{ background: 'rgba(0,208,132,0.1)', border: '1px solid rgba(0,208,132,0.3)', color: '#00d084' }}>
+              <div style={{ padding: '10px 14px', borderRadius: 10, fontSize: 13, background: 'rgba(0,208,132,0.1)', border: '1px solid rgba(0,208,132,0.3)', color: '#00d084' }}>
                 {message}
               </div>
             )}
@@ -133,32 +135,33 @@ export function Auth() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-60"
-              style={{ background: 'linear-gradient(135deg,#6c63ff,#a78bfa)' }}
+              style={{ width: '100%', padding: '13px 0', borderRadius: 12, fontWeight: 700, fontSize: 15, color: '#fff', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1, background: 'linear-gradient(135deg,#6c63ff,#a78bfa)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
             >
-              {loading && <Loader2 size={16} className="animate-spin" />}
+              {loading && <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />}
               {mode === 'login' ? 'Entrar' : mode === 'signup' ? 'Criar Conta' : 'Enviar e-mail'}
             </button>
           </form>
 
           {/* Toggle mode */}
-          <div className="mt-6 text-center text-sm" style={{ color: '#8892a4' }}>
+          <div style={{ marginTop: 24, textAlign: 'center', fontSize: 14, color: '#8892a4' }}>
             {mode === 'login' ? (
               <>Não tem conta?{' '}
-                <button onClick={() => { setMode('signup'); setError(''); setMessage('') }} className="font-semibold" style={{ color: '#a78bfa' }}>Cadastrar</button>
+                <button onClick={() => { setMode('signup'); setError(''); setMessage('') }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, color: '#a78bfa' }}>Cadastrar</button>
               </>
             ) : (
-              <button onClick={() => { setMode('login'); setError(''); setMessage('') }} style={{ color: '#a78bfa' }}>
+              <button onClick={() => { setMode('login'); setError(''); setMessage('') }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a78bfa' }}>
                 ← Voltar para o login
               </button>
             )}
           </div>
         </div>
 
-        <p className="text-center text-xs mt-6" style={{ color: '#4a4d5e' }}>
+        <p style={{ textAlign: 'center', fontSize: 12, marginTop: 24, color: '#4a4d5e' }}>
           Dados armazenados com segurança no Supabase
         </p>
       </div>
+
+      <style>{`@keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }`}</style>
     </div>
   )
 }

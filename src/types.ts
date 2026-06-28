@@ -67,6 +67,8 @@ export interface JournalEntry {
   }
 }
 
+export type AccountType = 'proprio' | 'mesa'
+
 export interface RiskSettings {
   accountSize: number
   maxDailyLoss: number
@@ -76,6 +78,8 @@ export interface RiskSettings {
   maxPositions: number
   dailyTarget: number
   dailyTargetPercent: number
+  accountType: AccountType
+  propFirmSplit: number // % que o trader fica (ex: 80 = trader fica 80%)
 }
 
 export interface AppState {

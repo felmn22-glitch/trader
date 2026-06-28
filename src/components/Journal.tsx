@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Plus, ChevronDown, ChevronUp, Star, BookOpen } from 'lucide-react'
+import { useIsMobile } from '../hooks'
 import { useStore } from '../store'
 import { today, formatDate } from '../utils'
 import type { JournalEntry, EmotionalState } from '../types'
@@ -218,18 +219,17 @@ function JournalForm({ onClose }: { onClose: () => void }) {
 
 export function Journal() {
   const { journalEntries } = useStore()
+  const isMobile = useIsMobile()
   const [showForm, setShowForm] = useState(false)
+  const pad = isMobile ? '12px 14px 80px' : '20px 28px 28px'
 
   return (
-    <div className="p-6 space-y-5">
+    <div style={{ padding: pad }} className="space-y-4">
       {showForm && <JournalForm onClose={() => setShowForm(false)} />}
 
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Diário de Trading</h1>
-          <p className="text-sm mt-1" style={{ color: '#8892a4' }}>Registro diário da sua evolução</p>
-        </div>
-        <button onClick={() => setShowForm(true)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: 'linear-gradient(135deg,#6c63ff,#a78bfa)' }}>
+        <p className="text-sm" style={{ color: '#5a6280' }}>Registro diário da sua evolução</p>
+        <button onClick={() => setShowForm(true)} className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: 'linear-gradient(135deg,#6c63ff,#a78bfa)', boxShadow: '0 4px 16px rgba(108,99,255,0.3)' }}>
           <Plus size={16} /> Nova Entrada
         </button>
       </div>

@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { TrendingUp, TrendingDown, Target, AlertTriangle, Award, BarChart2, Zap } from 'lucide-react'
+import { useIsMobile } from '../hooks'
 import {
   AreaChart, Area, BarChart, Bar,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell
@@ -43,6 +44,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export function Dashboard({ setPage }: { setPage: (p: string) => void }) {
   const { trades, riskSettings } = useStore()
+  const isMobile = useIsMobile()
   const metrics = useMemo(() => calcMetrics(trades), [trades])
   const dayStats = useMemo(() => groupTradesByDay(trades), [trades])
 
@@ -94,18 +96,17 @@ export function Dashboard({ setPage }: { setPage: (p: string) => void }) {
 
   if (!trades.length) {
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-6 p-8">
-        <div className="p-6 rounded-2xl" style={{ background: 'rgba(108,99,255,0.1)', border: '1px solid rgba(108,99,255,0.2)' }}>
-          <BarChart2 size={48} color="#6c63ff" />
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 24, padding: 40 }}>
+        <div style={{ padding: 28, borderRadius: 24, background: 'rgba(108,99,255,0.12)', border: '1px solid rgba(108,99,255,0.25)' }}>
+          <BarChart2 size={52} color="#6c63ff" />
         </div>
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-white mb-2">Bem-vindo ao TraderPro</h2>
-          <p style={{ color: '#8892a4' }}>Comece registrando sua primeira operação para ver o dashboard</p>
+        <div style={{ textAlign: 'center' }}>
+          <h2 style={{ fontSize: 24, fontWeight: 700, color: '#fff', margin: '0 0 10px' }}>Bem-vindo ao TraderPro</h2>
+          <p style={{ color: '#5a6280', fontSize: 15 }}>Comece registrando sua primeira operação para ver o dashboard</p>
         </div>
         <button
           onClick={() => setPage('trades')}
-          className="px-6 py-3 rounded-xl font-semibold text-white transition-opacity hover:opacity-80"
-          style={{ background: 'linear-gradient(135deg,#6c63ff,#a78bfa)' }}
+          style={{ padding: '13px 28px', borderRadius: 12, fontWeight: 600, fontSize: 15, color: '#fff', border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg,#6c63ff,#a78bfa)', boxShadow: '0 4px 20px rgba(108,99,255,0.35)' }}
         >
           Registrar Primeira Operação
         </button>
@@ -113,8 +114,10 @@ export function Dashboard({ setPage }: { setPage: (p: string) => void }) {
     )
   }
 
+  const pad = isMobile ? '12px 14px 80px' : '20px 28px 28px'
+
   return (
-    <div className="p-6 space-y-6">
+    <div style={{ padding: pad }} className="space-y-5">
       {/* Alerts */}
       {(dailyLimitHit || targetHit) && (
         <div className="flex gap-3">
@@ -138,12 +141,6 @@ export function Dashboard({ setPage }: { setPage: (p: string) => void }) {
           )}
         </div>
       )}
-
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-        <p style={{ color: '#8892a4' }} className="text-sm mt-1">Visão geral do seu desempenho</p>
-      </div>
 
       {/* Today quick stats */}
       <div className="rounded-xl p-5" style={{ background: '#1a1d2e', border: '1px solid #1e2235' }}>

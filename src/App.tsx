@@ -5,6 +5,7 @@ import { useStore } from './store'
 import { Layout } from './components/Layout'
 import { Dashboard } from './components/Dashboard'
 import { Trades } from './components/Trades'
+import { Tax } from './components/Tax'
 import { Journal } from './components/Journal'
 import { Rules } from './components/Rules'
 import { Risk } from './components/Risk'
@@ -50,6 +51,7 @@ export default function App() {
   const content = {
     dashboard: <Dashboard setPage={setPage} />,
     trades: <Trades />,
+    tax: <Tax />,
     journal: <Journal />,
     rules: <Rules />,
     risk: <Risk />,

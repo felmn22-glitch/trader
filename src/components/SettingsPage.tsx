@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Download, Upload, AlertTriangle, LogOut, User } from 'lucide-react'
+import { useIsMobile } from '../hooks'
 import type { Session } from '@supabase/supabase-js'
 import { useStore } from '../store'
 import { supabase } from '../lib/supabase'
@@ -10,6 +11,7 @@ interface Props {
 
 export function SettingsPage({ session }: Props) {
   const { trades, journalEntries, rules, riskSettings } = useStore()
+  const isMobile = useIsMobile()
   const [imported, setImported] = useState(false)
 
   function exportData() {
@@ -43,13 +45,10 @@ export function SettingsPage({ session }: Props) {
     await supabase.auth.signOut()
   }
 
-  return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Configurações</h1>
-        <p className="text-sm mt-1" style={{ color: '#8892a4' }}>Gerenciar conta e dados</p>
-      </div>
+  const pad = isMobile ? '12px 14px 80px' : '20px 28px 28px'
 
+  return (
+    <div style={{ padding: pad }} className="space-y-5">
       {/* User info */}
       <div className="flex items-center gap-4 p-4 rounded-xl" style={{ background: '#1a1d2e', border: '1px solid #1e2235' }}>
         <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'rgba(108,99,255,0.2)' }}>

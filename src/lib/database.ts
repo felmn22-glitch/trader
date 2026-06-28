@@ -209,5 +209,7 @@ function dbToRisk(r: Record<string, unknown>): RiskSettings {
     maxPositions: Number(r.max_positions),
     dailyTarget: Number(r.daily_target),
     dailyTargetPercent: Number(r.daily_target_percent),
+    accountType: (r.account_type as 'proprio' | 'mesa') ?? 'proprio',
+    propFirmSplit: Number(r.prop_firm_split) || 80,
   }
 }

@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Shield, Calculator, TrendingDown, DollarSign } from 'lucide-react'
+import { Shield, Calculator, TrendingDown, DollarSign, User, Building2 } from 'lucide-react'
 import { useStore } from '../store'
 import { calcPositionSize, formatCurrency } from '../utils'
+import { useIsMobile } from '../hooks'
 
 const inputCls = "w-full px-3 py-2.5 rounded-lg text-sm text-white outline-none focus:ring-1 focus:ring-purple-500"
 const inputStyle = { background: '#12141f', border: '1px solid #2a2d3e' }
@@ -18,6 +19,11 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 
 export function Risk() {
   const { riskSettings, updateRiskSettings } = useStore()
+  const isMobile = useIsMobile()
+  const [localSettings, setLocalSettings] = useState({
+    accountSize: riskSettings.accountSize.toString(),
+    maxPositions: riskSettings.maxPositions.toString(),
+  })
   const [calc, setCalc] = useState({ entry: '', stop: '', riskPct: riskSettings.maxTradeRiskPercent.toString() })
 
   const posSize = calc.entry && calc.stop
@@ -27,22 +33,41 @@ export function Risk() {
     ? Math.abs(parseFloat(calc.entry) - parseFloat(calc.stop)) * posSize
     : 0
 
-  function update(field: keyof typeof riskSettings, value: string) {
-    const n = parseFloat(value)
-    if (!isNaN(n)) updateRiskSettings({ [field]: n })
-  }
-
   const rules = [
     { label: 'Risco Máx por Trade', value: formatCurrency(riskSettings.maxTradeRisk), pct: `${riskSettings.maxTradeRiskPercent}%`, color: '#ff4d4d', icon: TrendingDown },
     { label: 'Perda Máxima Diária', value: formatCurrency(riskSettings.maxDailyLoss), pct: `${riskSettings.maxDailyLossPercent}%`, color: '#ff8c00', icon: Shield },
     { label: 'Meta Diária', value: formatCurrency(riskSettings.dailyTarget), pct: `${riskSettings.dailyTargetPercent}%`, color: '#00d084', icon: DollarSign },
   ]
 
+  const pad = isMobile ? '14px 14px 80px' : '20px 28px 28px'
+
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Gestão de Risco</h1>
-        <p className="text-sm mt-1" style={{ color: '#8892a4' }}>Configure seus parâmetros de risco para proteger seu capital</p>
+    <div style={{ padding: pad, display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {/* Account type */}
+      <div style={{ background: '#12141f', borderRadius: 14, border: '1px solid #1a1d2e', padding: '16px 18px' }}>
+        <p style={{ color: '#4a5170', fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', margin: '0 0 12px', textTransform: 'uppercase' }}>Tipo de Conta</p>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          {([
+            { id: 'proprio', label: 'Capital Próprio', sub: '100% do resultado', Icon: User },
+            { id: 'mesa', label: 'Mesa Proprietária', sub: 'Prop firm', Icon: Building2 },
+          ] as const).map(({ id, label, sub, Icon }) => (
+            <button
+              key={id}
+              onClick={() => updateRiskSettings({ accountType: id })}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderRadius: 10, cursor: 'pointer', flex: 1, minWidth: 140,
+                border: `2px solid ${riskSettings.accountType === id ? '#6c63ff' : '#1e2235'}`,
+                background: riskSettings.accountType === id ? 'rgba(108,99,255,0.12)' : '#0e1018',
+              }}
+            >
+              <Icon size={18} color={riskSettings.accountType === id ? '#a78bfa' : '#4a5170'} />
+              <div style={{ textAlign: 'left' }}>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: riskSettings.accountType === id ? '#c4b5fd' : '#8892a4' }}>{label}</p>
+                <p style={{ margin: 0, fontSize: 11, color: '#4a5170' }}>{sub}</p>
+              </div>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Quick summary */}
@@ -65,7 +90,17 @@ export function Risk() {
           <p className="text-sm font-bold text-white">Configurações da Conta</p>
 
           <Field label="Tamanho da Conta (R$)">
-            <input type="number" className={inputCls} style={inputStyle} value={riskSettings.accountSize} onChange={(e) => update('accountSize', e.target.value)} />
+            <input
+              type="number"
+              className={inputCls}
+              style={inputStyle}
+              value={localSettings.accountSize}
+              onChange={(e) => {
+                setLocalSettings((s) => ({ ...s, accountSize: e.target.value }))
+                const n = parseFloat(e.target.value)
+                if (!isNaN(n)) updateRiskSettings({ accountSize: n })
+              }}
+            />
           </Field>
           <Field label="Risco Máximo por Trade (%)" hint="Recomendado: 0.5% a 2%">
             <div className="flex gap-2">
@@ -101,7 +136,17 @@ export function Risk() {
             </div>
           </Field>
           <Field label="Máximo de Posições Simultâneas">
-            <input type="number" className={inputCls} style={inputStyle} value={riskSettings.maxPositions} onChange={(e) => update('maxPositions', e.target.value)} />
+            <input
+              type="number"
+              className={inputCls}
+              style={inputStyle}
+              value={localSettings.maxPositions}
+              onChange={(e) => {
+                setLocalSettings((s) => ({ ...s, maxPositions: e.target.value }))
+                const n = parseFloat(e.target.value)
+                if (!isNaN(n)) updateRiskSettings({ maxPositions: n })
+              }}
+            />
           </Field>
         </div>
 

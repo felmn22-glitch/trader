@@ -68,6 +68,7 @@ export function Trades() {
   const [sortKey, setSortKey] = useState<keyof Trade>('date')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
   const [overrideProtection, setOverrideProtection] = useState(false)
+  const [filterTag, setFilterTag] = useState('all')
 
   const todayStr = new Date().toISOString().slice(0, 10)
   const todayPnl = useMemo(() => trades.filter(t => t.date.startsWith(todayStr)).reduce((s, t) => s + t.pnl, 0), [trades, todayStr])
@@ -78,6 +79,12 @@ export function Trades() {
   const months = useMemo(() =>
     [...new Set(trades.map(t => t.date.slice(0, 7)))].sort().reverse(), [trades])
 
+  const allTags = useMemo(() => {
+    const s = new Set<string>()
+    for (const t of trades) for (const tag of (t.tags ?? [])) s.add(tag)
+    return [...s].sort()
+  }, [trades])
+
   const filtered = useMemo(() => {
     let list = [...trades]
     if (search) {
@@ -86,6 +93,7 @@ export function Trades() {
     }
     if (filterResult !== 'all') list = list.filter(t => t.result === filterResult)
     if (filterMonth !== 'all') list = list.filter(t => t.date.startsWith(filterMonth))
+    if (filterTag !== 'all') list = list.filter(t => t.tags?.includes(filterTag))
     list.sort((a, b) => {
       const av = a[sortKey] as string | number
       const bv = b[sortKey] as string | number
@@ -93,7 +101,7 @@ export function Trades() {
       return sortDir === 'asc' ? (av > bv ? 1 : -1) : (av < bv ? 1 : -1)
     })
     return list
-  }, [trades, search, filterResult, filterMonth, sortKey, sortDir])
+  }, [trades, search, filterResult, filterMonth, filterTag, sortKey, sortDir])
 
   function sort(key: keyof Trade) {
     if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
@@ -203,6 +211,16 @@ export function Trades() {
             >{r === 'all' ? 'Todos' : r}</button>
           ))}
         </div>
+        {allTags.length > 0 && (
+          <select
+            value={filterTag}
+            onChange={e => setFilterTag(e.target.value)}
+            style={{ padding: '8px 10px', borderRadius: 9, border: `1px solid ${filterTag !== 'all' ? '#6c63ff' : '#1e2235'}`, background: filterTag !== 'all' ? 'rgba(108,99,255,0.15)' : '#12141f', color: filterTag !== 'all' ? '#a78bfa' : '#4a5170', fontSize: 13, cursor: 'pointer' }}
+          >
+            <option value="all">Todas as tags</option>
+            {allTags.map(tag => <option key={tag} value={tag}>#{tag}</option>)}
+          </select>
+        )}
       </div>
 
       {/* Content */}
@@ -212,9 +230,9 @@ export function Trades() {
           <p style={{ fontSize: 13 }}>Registre sua primeira operação clicando em "Nova Operação"</p>
         </div>
       ) : isMobile ? (
-        <MobileCards trades={filtered} onEdit={t => setEditing(t)} onDelete={id => { if (confirm('Excluir operação?')) void deleteTrade(id) }} />
+        <MobileCards trades={filtered} onEdit={t => setEditing(t)} onDelete={id => void deleteTrade(id)} />
       ) : (
-        <DesktopTable trades={filtered} onEdit={t => setEditing(t)} onDelete={id => { if (confirm('Excluir operação?')) void deleteTrade(id) }} sort={sort} sortKey={sortKey} sortDir={sortDir} totalPnl={totalPnl} />
+        <DesktopTable trades={filtered} onEdit={t => setEditing(t)} onDelete={id => void deleteTrade(id)} sort={sort} sortKey={sortKey} sortDir={sortDir} totalPnl={totalPnl} />
       )}
     </div>
   )
@@ -229,6 +247,7 @@ function DesktopTable({ trades, onEdit, onDelete, sort, sortKey, sortDir, totalP
   trades: Trade[]; onEdit: (t: Trade) => void; onDelete: (id: string) => void
   sort: (k: keyof Trade) => void; sortKey: keyof Trade; sortDir: string; totalPnl: number
 }) {
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const cols = [
     { key: 'date', label: 'Data', w: 90 },
     { key: 'asset', label: 'Ativo', w: 80 },
@@ -291,13 +310,20 @@ function DesktopTable({ trades, onEdit, onDelete, sort, sortKey, sortDir, totalP
                 <td style={{ padding: '9px 12px', color: '#6a7090', fontSize: 12 }}>{t.setup || '—'}</td>
                 <td style={{ padding: '9px 12px', color: '#6a7090', fontSize: 12 }}>{emotionLabel[t.emotionalState] || t.emotionalState}</td>
                 <td style={{ padding: '9px 8px' }}>
-                  <div style={{ display: 'flex', gap: 4 }}>
+                  <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                     <button onClick={() => onEdit(t)} style={{ padding: 5, borderRadius: 6, border: 'none', background: 'rgba(108,99,255,0.1)', cursor: 'pointer' }}>
                       <Pencil size={13} color="#a78bfa" />
                     </button>
-                    <button onClick={() => onDelete(t.id)} style={{ padding: 5, borderRadius: 6, border: 'none', background: 'rgba(255,77,77,0.1)', cursor: 'pointer' }}>
-                      <Trash2 size={13} color="#ff4d4d" />
-                    </button>
+                    {deleteConfirm === t.id ? (
+                      <>
+                        <button onClick={() => setDeleteConfirm(null)} style={{ padding: '3px 7px', borderRadius: 6, border: '1px solid #2a2d3e', background: 'transparent', cursor: 'pointer', fontSize: 11, color: '#8892a4' }}>Não</button>
+                        <button onClick={() => { onDelete(t.id); setDeleteConfirm(null) }} style={{ padding: '3px 7px', borderRadius: 6, border: '1px solid rgba(255,77,77,0.4)', background: 'rgba(255,77,77,0.15)', cursor: 'pointer', fontSize: 11, fontWeight: 700, color: '#ff4d4d' }}>Sim</button>
+                      </>
+                    ) : (
+                      <button onClick={() => setDeleteConfirm(t.id)} style={{ padding: 5, borderRadius: 6, border: 'none', background: 'rgba(255,77,77,0.1)', cursor: 'pointer' }}>
+                        <Trash2 size={13} color="#ff4d4d" />
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>
@@ -324,6 +350,7 @@ function DesktopTable({ trades, onEdit, onDelete, sort, sortKey, sortDir, totalP
 function MobileCards({ trades, onEdit, onDelete }: {
   trades: Trade[]; onEdit: (t: Trade) => void; onDelete: (id: string) => void
 }) {
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       {trades.map(t => (
@@ -372,9 +399,16 @@ function MobileCards({ trades, onEdit, onDelete }: {
               <button onClick={() => onEdit(t)} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 8, border: 'none', background: 'rgba(108,99,255,0.15)', cursor: 'pointer', color: '#a78bfa', fontSize: 13, fontWeight: 600 }}>
                 <Pencil size={13} /> Editar
               </button>
-              <button onClick={() => onDelete(t.id)} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 8, border: 'none', background: 'rgba(255,77,77,0.1)', cursor: 'pointer', color: '#ff4d4d', fontSize: 13, fontWeight: 600 }}>
-                <Trash2 size={13} /> Excluir
-              </button>
+              {deleteConfirm === t.id ? (
+                <>
+                  <button onClick={() => setDeleteConfirm(null)} style={{ flex: 1, padding: '7px 10px', borderRadius: 8, border: '1px solid #2a2d3e', background: 'transparent', cursor: 'pointer', color: '#8892a4', fontSize: 12 }}>Cancelar</button>
+                  <button onClick={() => { onDelete(t.id); setDeleteConfirm(null) }} style={{ flex: 1, padding: '7px 10px', borderRadius: 8, border: '1px solid rgba(255,77,77,0.4)', background: 'rgba(255,77,77,0.15)', cursor: 'pointer', color: '#ff4d4d', fontSize: 12, fontWeight: 700 }}>Confirmar exclusão</button>
+                </>
+              ) : (
+                <button onClick={() => setDeleteConfirm(t.id)} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 8, border: 'none', background: 'rgba(255,77,77,0.1)', cursor: 'pointer', color: '#ff4d4d', fontSize: 13, fontWeight: 600 }}>
+                  <Trash2 size={13} /> Excluir
+                </button>
+              )}
             </div>
           </div>
         </div>

@@ -16,6 +16,7 @@ export function Rules() {
   const { rules, addRule, toggleRule, deleteRule } = useStore()
   const [showForm, setShowForm] = useState(false)
   const [filter, setFilter] = useState<string>('all')
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [form, setForm] = useState({ title: '', description: '', category: 'entry' as Rule['category'] })
 
   const filtered = filter === 'all' ? rules : rules.filter((r) => r.category === filter)
@@ -137,9 +138,16 @@ export function Rules() {
               </div>
               {rule.description && <p className="text-xs mt-1" style={{ color: '#8892a4' }}>{rule.description}</p>}
             </div>
-            <button onClick={() => { if (confirm('Excluir esta regra?')) void deleteRule(rule.id) }} className="p-1.5 rounded hover:bg-white/5">
-              <Trash2 size={14} color="#ff4d4d" />
-            </button>
+            {deleteConfirm === rule.id ? (
+              <div className="flex gap-1.5 items-center">
+                <button onClick={() => setDeleteConfirm(null)} className="px-2 py-1 rounded text-xs" style={{ border: '1px solid #2a2d3e', color: '#8892a4' }}>Não</button>
+                <button onClick={() => { void deleteRule(rule.id); setDeleteConfirm(null) }} className="px-2 py-1 rounded text-xs font-bold" style={{ background: 'rgba(255,77,77,0.15)', border: '1px solid rgba(255,77,77,0.3)', color: '#ff4d4d' }}>Sim</button>
+              </div>
+            ) : (
+              <button onClick={() => setDeleteConfirm(rule.id)} className="p-1.5 rounded hover:bg-white/5">
+                <Trash2 size={14} color="#ff4d4d" />
+              </button>
+            )}
           </div>
         ))}
         {filtered.length === 0 && (

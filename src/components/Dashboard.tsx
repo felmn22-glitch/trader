@@ -129,17 +129,35 @@ export function Dashboard({ setPage }: { setPage: (p: string) => void }) {
   }, [trades, journalEntries])
 
   const setupPerf = useMemo(() => {
-    const map: Record<string, { pnl: number; total: number }> = {}
+    const map: Record<string, { pnl: number; total: number; wins: number }> = {}
     for (const t of trades) {
       const s = t.setup || 'Sem setup'
-      if (!map[s]) map[s] = { pnl: 0, total: 0 }
+      if (!map[s]) map[s] = { pnl: 0, total: 0, wins: 0 }
       map[s].pnl += t.pnl
       map[s].total++
+      if (t.result === 'WIN') map[s].wins++
     }
     return Object.entries(map)
-      .map(([setup, { pnl, total }]) => ({ setup, pnl: Math.round(pnl * 100) / 100, total }))
-      .sort((a, b) => b.pnl - a.pnl)
+      .map(([setup, { pnl, total, wins }]) => ({ setup, pnl: Math.round(pnl * 100) / 100, total, wr: Math.round((wins / total) * 100) }))
+      .sort((a, b) => b.wr - a.wr || b.total - a.total)
       .slice(0, 5)
+  }, [trades])
+
+  const durationStats = useMemo(() => {
+    const withDur = trades.filter(t => t.duration != null && t.duration > 0)
+    if (!withDur.length) return []
+    const buckets = [
+      { label: '<5min', min: 0, max: 5 },
+      { label: '5–15min', min: 5, max: 15 },
+      { label: '15–30min', min: 15, max: 30 },
+      { label: '30–60min', min: 30, max: 60 },
+      { label: '>60min', min: 60, max: Infinity },
+    ]
+    return buckets.map(({ label, min, max }) => {
+      const b = withDur.filter(t => t.duration! >= min && t.duration! < max)
+      const wins = b.filter(t => t.result === 'WIN').length
+      return { label, total: b.length, wr: b.length ? Math.round((wins / b.length) * 100) : 0, pnl: Math.round(b.reduce((s, t) => s + t.pnl, 0) * 100) / 100 }
+    }).filter(b => b.total > 0)
   }, [trades])
 
   if (!trades.length) {
@@ -300,12 +318,12 @@ export function Dashboard({ setPage }: { setPage: (p: string) => void }) {
           <div className="space-y-3">
             {setupPerf.length === 0 && <p className="text-xs" style={{ color: '#8892a4' }}>Nenhum setup registrado</p>}
             {setupPerf.map((s) => (
-              <div key={s.setup} className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-medium text-white">{s.setup}</p>
-                  <p className="text-xs" style={{ color: '#8892a4' }}>{s.total} ops</p>
+              <div key={s.setup} className="flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-white truncate">{s.setup}</p>
+                  <p className="text-xs" style={{ color: '#8892a4' }}>{s.total} ops · <span style={{ color: s.wr >= 60 ? '#00d084' : s.wr >= 40 ? '#ffd700' : '#ff4d4d' }}>{s.wr}% WR</span></p>
                 </div>
-                <span className="text-sm font-bold" style={{ color: s.pnl >= 0 ? '#00d084' : '#ff4d4d' }}>
+                <span className="text-sm font-bold" style={{ color: s.pnl >= 0 ? '#00d084' : '#ff4d4d', whiteSpace: 'nowrap' }}>
                   {formatCurrency(s.pnl)}
                 </span>
               </div>
@@ -397,6 +415,27 @@ export function Dashboard({ setPage }: { setPage: (p: string) => void }) {
           )}
         </div>
       </div>
+
+      {/* Duration analysis (only when trades have duration recorded) */}
+      {durationStats.length >= 2 && (
+        <div className="rounded-xl p-5" style={{ background: '#1a1d2e', border: '1px solid #1e2235' }}>
+          <p className="text-sm font-semibold mb-1 text-white">Desempenho por Duração</p>
+          <p className="text-xs mb-4" style={{ color: '#4a5170' }}>Win rate e P&L total por tempo médio de permanência na operação</p>
+          <div className="space-y-3">
+            {durationStats.map((d) => (
+              <div key={d.label} className="flex items-center gap-3">
+                <span className="text-xs font-bold" style={{ color: '#8892a4', minWidth: 56 }}>{d.label}</span>
+                <div className="flex-1 h-2 rounded-full" style={{ background: '#12141f' }}>
+                  <div className="h-2 rounded-full" style={{ width: `${d.wr}%`, background: d.pnl >= 0 ? 'linear-gradient(90deg,#6c63ff,#00d084)' : '#ff4d4d' }} />
+                </div>
+                <span className="text-xs" style={{ color: '#4a5170', minWidth: 42, textAlign: 'right' }}>{d.wr}% WR</span>
+                <span className="text-xs" style={{ color: '#4a5170', minWidth: 28, textAlign: 'right' }}>{d.total} ops</span>
+                <span className="text-sm font-bold" style={{ color: d.pnl >= 0 ? '#00d084' : '#ff4d4d', minWidth: 80, textAlign: 'right', fontFamily: 'monospace' }}>{formatCurrency(d.pnl)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Sleep × Win Rate (only shown when journal data exists) */}
       {sleepPerf.length >= 2 && (

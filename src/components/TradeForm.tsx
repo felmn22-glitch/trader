@@ -75,6 +75,10 @@ export function TradeForm({ trade, onClose }: Props) {
     ? calcRiskReward({ entryPrice: entry, exitPrice: exit, stopLoss: sl, target, direction: form.direction })
     : null
 
+  const actualRR = entry && sl && exit && qty && previewPnl !== null
+    ? Math.round(Math.abs(previewPnl / (Math.abs(entry - sl) * qty)) * 100) / 100
+    : null
+
   function set(field: string, value: unknown) {
     setForm((f) => ({ ...f, [field]: value }))
   }
@@ -193,9 +197,17 @@ export function TradeForm({ trade, onClose }: Props) {
               </div>
               {previewRR !== null && (
                 <div>
-                  <p className="text-xs" style={{ color: '#8892a4' }}>R:R</p>
+                  <p className="text-xs" style={{ color: '#8892a4' }}>R:R Planejado</p>
                   <p className="font-bold text-lg" style={{ color: previewRR >= 2 ? '#00d084' : previewRR >= 1 ? '#ffd700' : '#ff4d4d' }}>
                     1:{previewRR}
+                  </p>
+                </div>
+              )}
+              {actualRR !== null && (
+                <div>
+                  <p className="text-xs" style={{ color: '#8892a4' }}>R:R Realizado</p>
+                  <p className="font-bold text-lg" style={{ color: actualRR >= 2 ? '#00d084' : actualRR >= 1 ? '#ffd700' : (previewPnl! < 0 ? '#ff4d4d' : '#ffd700') }}>
+                    {previewPnl! < 0 ? '-' : ''}1:{actualRR}
                   </p>
                 </div>
               )}

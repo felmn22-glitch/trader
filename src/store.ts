@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { AppState, Rule, RiskSettings } from './types'
+import type { AppState, Trade, JournalEntry, Rule, RiskSettings } from './types'
 import {
   fetchTrades, insertTrade, updateTradeDb, deleteTradeDb,
   fetchJournalEntries, insertJournalEntry, updateJournalEntryDb,
@@ -34,6 +34,7 @@ const defaultRiskSettings: RiskSettings = {
 interface StoreState extends AppState {
   loading: boolean
   loadData: () => Promise<void>
+  bulkImport: (data: Record<string, unknown>) => Promise<{ trades: number; journal: number; rules: number }>
 }
 
 export const useStore = create<StoreState>((set, get) => ({
@@ -74,8 +75,15 @@ export const useStore = create<StoreState>((set, get) => ({
   },
 
   addTrade: async (trade) => {
-    const saved = await insertTrade(trade)
-    set((s) => ({ trades: [saved, ...s.trades] }))
+    const tempId = `temp-${Date.now()}`
+    set((s) => ({ trades: [{ ...trade, id: tempId } as Trade, ...s.trades] }))
+    try {
+      const saved = await insertTrade(trade)
+      set((s) => ({ trades: s.trades.map((t) => (t.id === tempId ? saved : t)) }))
+    } catch (err) {
+      set((s) => ({ trades: s.trades.filter((t) => t.id !== tempId) }))
+      console.error('Erro ao registrar trade:', err)
+    }
   },
 
   updateTrade: async (id, updated) => {
@@ -146,6 +154,48 @@ export const useStore = create<StoreState>((set, get) => ({
       set({ rules: prev })
       console.error('Erro ao deletar regra:', err)
     }
+  },
+
+  bulkImport: async (data) => {
+    let tradesCount = 0, journalCount = 0, rulesCount = 0
+    const rawTrades = data.trades
+    if (Array.isArray(rawTrades)) {
+      for (const t of rawTrades as Trade[]) {
+        try {
+          const { id: _, ...rest } = t
+          const saved = await insertTrade(rest as Omit<Trade, 'id'>)
+          set((s) => ({ trades: [saved, ...s.trades] }))
+          tradesCount++
+        } catch { /* skip duplicates / invalid */ }
+      }
+    }
+    const rawJournal = data.journalEntries
+    if (Array.isArray(rawJournal)) {
+      for (const e of rawJournal as JournalEntry[]) {
+        try {
+          const { id: _, ...rest } = e
+          const saved = await insertJournalEntry(rest as Omit<JournalEntry, 'id'>)
+          set((s) => ({ journalEntries: [saved, ...s.journalEntries] }))
+          journalCount++
+        } catch { /* skip */ }
+      }
+    }
+    const rawRules = data.rules
+    if (Array.isArray(rawRules)) {
+      for (const r of rawRules as Rule[]) {
+        try {
+          const { id: _, ...rest } = r
+          const saved = await insertRule(rest as Omit<Rule, 'id'>)
+          set((s) => ({ rules: [...s.rules, saved] }))
+          rulesCount++
+        } catch { /* skip */ }
+      }
+    }
+    const rs = data.riskSettings as RiskSettings | undefined
+    if (rs && typeof rs === 'object') {
+      try { await upsertRiskSettings(rs) } catch { /* skip */ }
+    }
+    return { trades: tradesCount, journal: journalCount, rules: rulesCount }
   },
 
   updateRiskSettings: async (settings) => {

@@ -303,8 +303,9 @@ function DesktopTable({ trades, onEdit, onDelete, sort, sortKey, sortDir, totalP
                 <td style={{ padding: '9px 12px', color: t.riskReward >= 2 ? '#00d084' : t.riskReward >= 1 ? '#ffd700' : '#8892a4' }}>
                   {t.riskReward > 0 ? `1:${t.riskReward}` : '—'}
                 </td>
-                <td style={{ padding: '9px 12px', fontWeight: 700, fontFamily: 'monospace', color: t.pnl >= 0 ? '#00d084' : '#ff4d4d' }}>
-                  {t.pnl >= 0 ? '+' : ''}{formatCurrency(t.pnl)}
+                <td style={{ padding: '9px 12px' }}>
+                  <p style={{ fontWeight: 700, fontFamily: 'monospace', color: t.pnl >= 0 ? '#00d084' : '#ff4d4d', margin: 0 }}>{t.pnl >= 0 ? '+' : ''}{formatCurrency(t.pnl)}</p>
+                  {t.pnlPercent != null && t.pnlPercent !== 0 && <p style={{ fontSize: 10, color: '#4a5170', margin: 0, fontFamily: 'monospace' }}>{t.pnlPercent >= 0 ? '+' : ''}{t.pnlPercent.toFixed(2)}%</p>}
                 </td>
                 <td style={{ padding: '9px 12px' }}>{resultBadge(t.result)}</td>
                 <td style={{ padding: '9px 12px', color: '#6a7090', fontSize: 12 }}>{t.setup || '—'}</td>
@@ -390,11 +391,31 @@ function MobileCards({ trades, onEdit, onDelete }: {
             )}
           </div>
 
+          {/* Row 2.5: R:R, emoção, tags */}
+          {(t.riskReward > 0 || t.emotionalState || (t.tags?.length ?? 0) > 0) && (
+            <div style={{ display: 'flex', gap: 10, marginBottom: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+              {t.riskReward > 0 && (
+                <span style={{ fontSize: 11, color: t.riskReward >= 2 ? '#00d084' : t.riskReward >= 1 ? '#ffd700' : '#4a5170' }}>R:R 1:{t.riskReward}</span>
+              )}
+              {t.emotionalState && (
+                <span style={{ fontSize: 11, color: '#4a5170' }}>{emotionLabel[t.emotionalState] || t.emotionalState}</span>
+              )}
+              {(t.tags ?? []).map(tag => (
+                <span key={tag} style={{ fontSize: 10, padding: '1px 6px', borderRadius: 4, background: 'rgba(108,99,255,0.15)', color: '#a78bfa' }}>#{tag}</span>
+              ))}
+            </div>
+          )}
+
           {/* Row 3: PnL + actions */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 18, fontWeight: 700, fontFamily: 'monospace', color: t.pnl >= 0 ? '#00d084' : '#ff4d4d' }}>
-              {t.pnl >= 0 ? '+' : ''}{formatCurrency(t.pnl)}
-            </span>
+            <div>
+              <span style={{ fontSize: 18, fontWeight: 700, fontFamily: 'monospace', color: t.pnl >= 0 ? '#00d084' : '#ff4d4d' }}>
+                {t.pnl >= 0 ? '+' : ''}{formatCurrency(t.pnl)}
+              </span>
+              {t.pnlPercent != null && t.pnlPercent !== 0 && (
+                <span style={{ fontSize: 11, color: '#4a5170', marginLeft: 6, fontFamily: 'monospace' }}>{t.pnlPercent >= 0 ? '+' : ''}{t.pnlPercent.toFixed(2)}%</span>
+              )}
+            </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={() => onEdit(t)} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 8, border: 'none', background: 'rgba(108,99,255,0.15)', cursor: 'pointer', color: '#a78bfa', fontSize: 13, fontWeight: 600 }}>
                 <Pencil size={13} /> Editar

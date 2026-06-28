@@ -76,8 +76,12 @@ export function TradeForm({ trade, onClose }: Props) {
     : null
 
   const actualRR = entry && sl && exit && qty && previewPnl !== null
-    ? Math.round(Math.abs(previewPnl / (Math.abs(entry - sl) * qty)) * 100) / 100
+    ? Math.round(Math.abs(previewPnl) / (Math.abs(entry - sl) * qty) * 100) / 100
     : null
+
+  const tradeRisk = sl > 0 && entry > 0 && qty > 0 ? Math.abs(entry - sl) * qty : 0
+  const exceedsTradeRisk = !trade && tradeRisk > 0 && riskSettings.maxTradeRisk > 0 && tradeRisk > riskSettings.maxTradeRisk
+  const stopEqualsEntry = sl > 0 && entry > 0 && Math.abs(sl - entry) < 0.001
 
   function set(field: string, value: unknown) {
     setForm((f) => ({ ...f, [field]: value }))
@@ -136,8 +140,22 @@ export function TradeForm({ trade, onClose }: Props) {
             <div className="flex items-start gap-3 p-3 rounded-xl" style={{ background: 'rgba(255,215,0,0.08)', border: '1px solid rgba(255,215,0,0.25)' }}>
               <AlertTriangle size={16} color="#ffd700" style={{ flexShrink: 0, marginTop: 1 }} />
               <p className="text-xs" style={{ color: '#ffd700' }}>
-                Você já tem <strong>{todayCount}</strong> operações hoje — limite de <strong>{riskSettings.maxPositions}</strong> posições configurado. Você ainda pode registrar, mas avalie o risco.
+                Você já tem <strong>{todayCount}</strong> operações hoje — limite de <strong>{riskSettings.maxPositions}</strong> posições configurado.
               </p>
+            </div>
+          )}
+          {exceedsTradeRisk && (
+            <div className="flex items-start gap-3 p-3 rounded-xl" style={{ background: 'rgba(255,77,77,0.08)', border: '1px solid rgba(255,77,77,0.25)' }}>
+              <AlertTriangle size={16} color="#ff4d4d" style={{ flexShrink: 0, marginTop: 1 }} />
+              <p className="text-xs" style={{ color: '#ff6b6b' }}>
+                Risco desta operação: <strong>R${tradeRisk.toFixed(2)}</strong> — acima do limite de <strong>R${riskSettings.maxTradeRisk.toFixed(2)}</strong> por trade.
+              </p>
+            </div>
+          )}
+          {stopEqualsEntry && (
+            <div className="flex items-start gap-3 p-3 rounded-xl" style={{ background: 'rgba(255,77,77,0.08)', border: '1px solid rgba(255,77,77,0.25)' }}>
+              <AlertTriangle size={16} color="#ff4d4d" style={{ flexShrink: 0, marginTop: 1 }} />
+              <p className="text-xs" style={{ color: '#ff6b6b' }}>Stop loss igual ao preço de entrada — risco zero não é válido. Ajuste o stop.</p>
             </div>
           )}
           {/* Direction toggle */}
@@ -206,8 +224,8 @@ export function TradeForm({ trade, onClose }: Props) {
               {actualRR !== null && (
                 <div>
                   <p className="text-xs" style={{ color: '#8892a4' }}>R:R Realizado</p>
-                  <p className="font-bold text-lg" style={{ color: actualRR >= 2 ? '#00d084' : actualRR >= 1 ? '#ffd700' : (previewPnl! < 0 ? '#ff4d4d' : '#ffd700') }}>
-                    {previewPnl! < 0 ? '-' : ''}1:{actualRR}
+                  <p className="font-bold text-lg" style={{ color: previewPnl! >= 0 ? (actualRR >= 2 ? '#00d084' : '#ffd700') : '#ff4d4d' }}>
+                    1:{actualRR}
                   </p>
                 </div>
               )}

@@ -6,7 +6,7 @@ import {
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell
 } from 'recharts'
 import { useStore } from '../store'
-import { calcMetrics, groupTradesByDay, formatCurrency } from '../utils'
+import { calcMetrics, groupTradesByDay, formatCurrency, formatDate } from '../utils'
 import { format, subDays } from 'date-fns'
 
 function StatCard({
@@ -160,6 +160,42 @@ export function Dashboard({ setPage }: { setPage: (p: string) => void }) {
     }).filter(b => b.total > 0)
   }, [trades])
 
+  const tagPerf = useMemo(() => {
+    const map: Record<string, { pnl: number; total: number; wins: number }> = {}
+    for (const t of trades) {
+      for (const tag of (t.tags ?? [])) {
+        if (!map[tag]) map[tag] = { pnl: 0, total: 0, wins: 0 }
+        map[tag].pnl += t.pnl
+        map[tag].total++
+        if (t.result === 'WIN') map[tag].wins++
+      }
+    }
+    return Object.entries(map)
+      .map(([tag, { pnl, total, wins }]) => ({ tag, pnl: Math.round(pnl * 100) / 100, total, wr: Math.round((wins / total) * 100) }))
+      .sort((a, b) => b.wr - a.wr)
+      .slice(0, 8)
+  }, [trades])
+
+  const rulesCorrelation = useMemo(() => {
+    const g = { yes: { wins: 0, total: 0 }, no: { wins: 0, total: 0 } }
+    for (const entry of journalEntries) {
+      const dayTrades = trades.filter(t => t.date.startsWith(entry.date))
+      const key = entry.postMarket.followedRules ? 'yes' : 'no'
+      for (const t of dayTrades) {
+        g[key].total++
+        if (t.result === 'WIN') g[key].wins++
+      }
+    }
+    return {
+      yes: g.yes.total > 0 ? Math.round((g.yes.wins / g.yes.total) * 100) : null,
+      no: g.no.total > 0 ? Math.round((g.no.wins / g.no.total) * 100) : null,
+      yesTotal: g.yes.total, noTotal: g.no.total,
+    }
+  }, [trades, journalEntries])
+
+  const bestDay = dayStats.length > 0 ? dayStats.reduce((a, b) => a.totalPnl > b.totalPnl ? a : b) : null
+  const worstDay = dayStats.length > 0 ? dayStats.reduce((a, b) => a.totalPnl < b.totalPnl ? a : b) : null
+
   if (!trades.length) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 24, padding: 40 }}>
@@ -242,6 +278,16 @@ export function Dashboard({ setPage }: { setPage: (p: string) => void }) {
                 }}
               />
             </div>
+            {(() => {
+              if (todayPnl >= 0 || riskSettings.maxDailyLoss <= 0) return null
+              const pct = Math.min(100, Math.round(Math.abs(todayPnl) / riskSettings.maxDailyLoss * 100))
+              if (pct < 40) return null
+              return (
+                <p style={{ fontSize: 11, marginTop: 4, textAlign: 'right', color: pct >= 80 ? '#ff4d4d' : '#ffd700', fontWeight: 600 }}>
+                  {pct >= 80 ? '⚠ ' : ''}{pct}% do limite diário consumido
+                </p>
+              )
+            })()}
           </div>
         </div>
       </div>
@@ -372,6 +418,96 @@ export function Dashboard({ setPage }: { setPage: (p: string) => void }) {
           <p className="text-xl font-bold" style={{ color: metrics!.maxConsecutiveLosses >= 5 ? '#ff4d4d' : metrics!.maxConsecutiveLosses >= 3 ? '#ffd700' : '#8892a4' }}>{metrics!.maxConsecutiveLosses}</p>
         </div>
       </div>
+
+      {/* Best / Worst day */}
+      {(bestDay || worstDay) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {bestDay && bestDay.totalPnl > 0 && (
+            <div className="rounded-xl p-4 flex items-center gap-4" style={{ background: 'rgba(0,208,132,0.07)', border: '1px solid rgba(0,208,132,0.2)' }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(0,208,132,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <TrendingUp size={20} color="#00d084" />
+              </div>
+              <div>
+                <p className="text-xs" style={{ color: '#4a5170' }}>Melhor dia</p>
+                <p className="text-lg font-bold" style={{ color: '#00d084', fontFamily: 'monospace' }}>+{formatCurrency(bestDay.totalPnl)}</p>
+                <p className="text-xs" style={{ color: '#8892a4' }}>{formatDate(bestDay.date)} · {bestDay.wins}W {bestDay.losses}L em {bestDay.trades} ops</p>
+              </div>
+            </div>
+          )}
+          {worstDay && worstDay.totalPnl < 0 && (
+            <div className="rounded-xl p-4 flex items-center gap-4" style={{ background: 'rgba(255,77,77,0.06)', border: '1px solid rgba(255,77,77,0.2)' }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(255,77,77,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <TrendingDown size={20} color="#ff4d4d" />
+              </div>
+              <div>
+                <p className="text-xs" style={{ color: '#4a5170' }}>Pior dia</p>
+                <p className="text-lg font-bold" style={{ color: '#ff4d4d', fontFamily: 'monospace' }}>{formatCurrency(worstDay.totalPnl)}</p>
+                <p className="text-xs" style={{ color: '#8892a4' }}>{formatDate(worstDay.date)} · {worstDay.wins}W {worstDay.losses}L em {worstDay.trades} ops</p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Rules followed correlation + Tag analytics */}
+      {(rulesCorrelation.yes !== null || rulesCorrelation.no !== null || tagPerf.length > 0) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {(rulesCorrelation.yes !== null || rulesCorrelation.no !== null) && (
+            <div className="rounded-xl p-5" style={{ background: '#1a1d2e', border: '1px solid #1e2235' }}>
+              <p className="text-sm font-semibold mb-1 text-white">Disciplina × Win Rate</p>
+              <p className="text-xs mb-4" style={{ color: '#4a5170' }}>Comparação das operações nos dias em que você seguiu (ou não) suas regras</p>
+              <div className="space-y-4">
+                {rulesCorrelation.yes !== null && (
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-xs font-semibold" style={{ color: '#00d084' }}>Seguiu as regras ({rulesCorrelation.yesTotal} ops)</span>
+                      <span className="text-xs font-bold" style={{ color: '#00d084' }}>{rulesCorrelation.yes}%</span>
+                    </div>
+                    <div className="h-2 rounded-full" style={{ background: '#12141f' }}>
+                      <div className="h-2 rounded-full" style={{ width: `${rulesCorrelation.yes}%`, background: 'linear-gradient(90deg,#6c63ff,#00d084)' }} />
+                    </div>
+                  </div>
+                )}
+                {rulesCorrelation.no !== null && (
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-xs font-semibold" style={{ color: '#ff4d4d' }}>Não seguiu ({rulesCorrelation.noTotal} ops)</span>
+                      <span className="text-xs font-bold" style={{ color: '#ff4d4d' }}>{rulesCorrelation.no}%</span>
+                    </div>
+                    <div className="h-2 rounded-full" style={{ background: '#12141f' }}>
+                      <div className="h-2 rounded-full" style={{ width: `${rulesCorrelation.no}%`, background: '#ff4d4d' }} />
+                    </div>
+                  </div>
+                )}
+                {rulesCorrelation.yes !== null && rulesCorrelation.no !== null && (
+                  <p className="text-xs pt-1" style={{ color: rulesCorrelation.yes > rulesCorrelation.no ? '#00d084' : '#ffd700' }}>
+                    {rulesCorrelation.yes > rulesCorrelation.no
+                      ? `Seguir suas regras aumenta o WR em ${rulesCorrelation.yes - rulesCorrelation.no}pp`
+                      : 'Seus resultados independem de seguir as regras — revise-as'}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+          {tagPerf.length > 0 && (
+            <div className="rounded-xl p-5" style={{ background: '#1a1d2e', border: '1px solid #1e2235' }}>
+              <p className="text-sm font-semibold mb-4 text-white">Win Rate por Tag</p>
+              <div className="space-y-3">
+                {tagPerf.map((t) => (
+                  <div key={t.tag} className="flex items-center gap-3">
+                    <span style={{ fontSize: 11, color: '#a78bfa', background: 'rgba(108,99,255,0.12)', padding: '1px 7px', borderRadius: 4, minWidth: 70, textAlign: 'center' }}>#{t.tag}</span>
+                    <div className="flex-1 h-2 rounded-full" style={{ background: '#12141f' }}>
+                      <div className="h-2 rounded-full" style={{ width: `${t.wr}%`, background: t.pnl >= 0 ? 'linear-gradient(90deg,#6c63ff,#00d084)' : '#ff4d4d' }} />
+                    </div>
+                    <span className="text-xs" style={{ color: '#4a5170', minWidth: 40, textAlign: 'right' }}>{t.wr}% WR</span>
+                    <span className="text-xs font-bold" style={{ color: t.pnl >= 0 ? '#00d084' : '#ff4d4d', minWidth: 72, textAlign: 'right', fontFamily: 'monospace' }}>{formatCurrency(t.pnl)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Asset performance + Session win rate */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

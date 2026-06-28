@@ -98,7 +98,9 @@ export async function fetchRiskSettings(): Promise<RiskSettings | null> {
 }
 
 export async function upsertRiskSettings(settings: RiskSettings) {
-  const { error } = await supabase.from('risk_settings').upsert(riskToDb(settings))
+  const { error } = await supabase
+    .from('risk_settings')
+    .upsert(riskToDb(settings), { onConflict: 'user_id' })
   if (error) throw error
 }
 

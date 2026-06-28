@@ -106,8 +106,8 @@ export function Risk() {
           </Field>
           <Field label="Risco Máximo por Trade (%)" hint="Recomendado: 0.5% a 2%">
             <div className="flex gap-2">
-              <input type="number" step="0.1" className={inputCls} style={inputStyle} value={riskSettings.maxTradeRiskPercent} onChange={(e) => {
-                const pct = parseFloat(e.target.value) || 0
+              <input type="number" step="0.1" min="0.1" max="100" className={inputCls} style={inputStyle} value={riskSettings.maxTradeRiskPercent} onChange={(e) => {
+                const pct = Math.min(100, Math.max(0, parseFloat(e.target.value) || 0))
                 updateRiskSettings({ maxTradeRiskPercent: pct, maxTradeRisk: Math.round(riskSettings.accountSize * pct / 100) })
               }} />
               <div className="px-3 py-2.5 rounded-lg text-sm font-semibold shrink-0" style={{ background: 'rgba(255,77,77,0.1)', color: '#ff4d4d', border: '1px solid rgba(255,77,77,0.2)' }}>
@@ -117,8 +117,8 @@ export function Risk() {
           </Field>
           <Field label="Perda Máxima Diária (%)" hint="Recomendado: 2% a 5%">
             <div className="flex gap-2">
-              <input type="number" step="0.1" className={inputCls} style={inputStyle} value={riskSettings.maxDailyLossPercent} onChange={(e) => {
-                const pct = parseFloat(e.target.value) || 0
+              <input type="number" step="0.1" min="0.1" max="100" className={inputCls} style={inputStyle} value={riskSettings.maxDailyLossPercent} onChange={(e) => {
+                const pct = Math.min(100, Math.max(0, parseFloat(e.target.value) || 0))
                 updateRiskSettings({ maxDailyLossPercent: pct, maxDailyLoss: Math.round(riskSettings.accountSize * pct / 100) })
               }} />
               <div className="px-3 py-2.5 rounded-lg text-sm font-semibold shrink-0" style={{ background: 'rgba(255,140,0,0.1)', color: '#ff8c00', border: '1px solid rgba(255,140,0,0.2)' }}>
@@ -128,8 +128,8 @@ export function Risk() {
           </Field>
           <Field label="Meta Diária (%)" hint="Recomendado: 1% a 3%">
             <div className="flex gap-2">
-              <input type="number" step="0.1" className={inputCls} style={inputStyle} value={riskSettings.dailyTargetPercent} onChange={(e) => {
-                const pct = parseFloat(e.target.value) || 0
+              <input type="number" step="0.1" min="0.1" max="100" className={inputCls} style={inputStyle} value={riskSettings.dailyTargetPercent} onChange={(e) => {
+                const pct = Math.min(100, Math.max(0, parseFloat(e.target.value) || 0))
                 updateRiskSettings({ dailyTargetPercent: pct, dailyTarget: Math.round(riskSettings.accountSize * pct / 100) })
               }} />
               <div className="px-3 py-2.5 rounded-lg text-sm font-semibold shrink-0" style={{ background: 'rgba(0,208,132,0.1)', color: '#00d084', border: '1px solid rgba(0,208,132,0.2)' }}>

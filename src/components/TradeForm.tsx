@@ -79,7 +79,8 @@ export function TradeForm({ trade, onClose }: Props) {
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
-    if (!form.asset || !entry || !exit || !qty) return
+    const assetClean = form.asset.trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 20)
+    if (!assetClean || !entry || entry <= 0 || !exit || exit <= 0 || !qty || qty <= 0) return
 
     const pnl = calcPnl({ direction: form.direction, entryPrice: entry, exitPrice: exit, quantity: qty, stopLoss: sl, target })
     const result = getResult(pnl)
@@ -87,7 +88,7 @@ export function TradeForm({ trade, onClose }: Props) {
 
     const payload = {
       date: form.date,
-      asset: form.asset.toUpperCase(),
+      asset: assetClean,
       direction: form.direction,
       entryPrice: entry,
       exitPrice: exit,
@@ -152,22 +153,22 @@ export function TradeForm({ trade, onClose }: Props) {
               <input className={inputCls} style={inputStyle} placeholder="Ex: PETR4, WIN, WDOFUT" value={form.asset} onChange={(e) => set('asset', e.target.value)} required />
             </Field>
             <Field label="Preço de Entrada">
-              <input type="number" step="0.01" className={inputCls} style={inputStyle} placeholder="0.00" value={form.entryPrice} onChange={(e) => set('entryPrice', e.target.value)} required />
+              <input type="number" step="0.01" min="0.01" className={inputCls} style={inputStyle} placeholder="0.00" value={form.entryPrice} onChange={(e) => set('entryPrice', e.target.value)} required />
             </Field>
             <Field label="Preço de Saída">
-              <input type="number" step="0.01" className={inputCls} style={inputStyle} placeholder="0.00" value={form.exitPrice} onChange={(e) => set('exitPrice', e.target.value)} required />
+              <input type="number" step="0.01" min="0.01" className={inputCls} style={inputStyle} placeholder="0.00" value={form.exitPrice} onChange={(e) => set('exitPrice', e.target.value)} required />
             </Field>
             <Field label={`Quantidade ${suggestedQty > 0 ? `(sugerido: ${suggestedQty})` : ''}`}>
-              <input type="number" className={inputCls} style={inputStyle} placeholder="0" value={form.quantity} onChange={(e) => set('quantity', e.target.value)} required />
+              <input type="number" min="1" className={inputCls} style={inputStyle} placeholder="0" value={form.quantity} onChange={(e) => set('quantity', e.target.value)} required />
             </Field>
             <Field label="Stop Loss">
-              <input type="number" step="0.01" className={inputCls} style={inputStyle} placeholder="0.00" value={form.stopLoss} onChange={(e) => set('stopLoss', e.target.value)} />
+              <input type="number" step="0.01" min="0" className={inputCls} style={inputStyle} placeholder="0.00" value={form.stopLoss} onChange={(e) => set('stopLoss', e.target.value)} />
             </Field>
             <Field label="Alvo (Target)">
-              <input type="number" step="0.01" className={inputCls} style={inputStyle} placeholder="0.00" value={form.target} onChange={(e) => set('target', e.target.value)} />
+              <input type="number" step="0.01" min="0" className={inputCls} style={inputStyle} placeholder="0.00" value={form.target} onChange={(e) => set('target', e.target.value)} />
             </Field>
             <Field label="Duração (minutos)">
-              <input type="number" className={inputCls} style={inputStyle} placeholder="0" value={form.duration} onChange={(e) => set('duration', e.target.value)} />
+              <input type="number" min="0" className={inputCls} style={inputStyle} placeholder="0" value={form.duration} onChange={(e) => set('duration', e.target.value)} />
             </Field>
           </div>
 

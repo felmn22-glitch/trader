@@ -91,14 +91,16 @@ export function Risk() {
 
           <Field label="Tamanho da Conta (R$)">
             <input
-              type="number"
+              type="text"
+              inputMode="numeric"
               className={inputCls}
               style={inputStyle}
               value={localSettings.accountSize}
               onChange={(e) => {
-                setLocalSettings((s) => ({ ...s, accountSize: e.target.value }))
-                const n = parseFloat(e.target.value)
-                if (!isNaN(n)) updateRiskSettings({ accountSize: n })
+                const raw = e.target.value.replace(/[^0-9]/g, '')
+                setLocalSettings((s) => ({ ...s, accountSize: raw }))
+                const n = parseFloat(raw)
+                if (!isNaN(n) && raw !== '') updateRiskSettings({ accountSize: n })
               }}
             />
           </Field>
@@ -137,14 +139,16 @@ export function Risk() {
           </Field>
           <Field label="Máximo de Posições Simultâneas">
             <input
-              type="number"
+              type="text"
+              inputMode="numeric"
               className={inputCls}
               style={inputStyle}
               value={localSettings.maxPositions}
               onChange={(e) => {
-                setLocalSettings((s) => ({ ...s, maxPositions: e.target.value }))
-                const n = parseFloat(e.target.value)
-                if (!isNaN(n)) updateRiskSettings({ maxPositions: n })
+                const raw = e.target.value.replace(/[^0-9]/g, '')
+                setLocalSettings((s) => ({ ...s, maxPositions: raw }))
+                const n = parseInt(raw, 10)
+                if (!isNaN(n) && raw !== '') updateRiskSettings({ maxPositions: n })
               }}
             />
           </Field>

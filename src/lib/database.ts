@@ -1,6 +1,12 @@
 import { supabase } from './supabase'
 import type { Trade, JournalEntry, Rule, RiskSettings } from '../types'
 
+async function getUid(): Promise<string> {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.user.id) throw new Error('Not authenticated')
+  return session.user.id
+}
+
 // ── Trades ──────────────────────────────────────────────────────────────────
 
 export async function fetchTrades() {
@@ -13,9 +19,10 @@ export async function fetchTrades() {
 }
 
 export async function insertTrade(trade: Omit<Trade, 'id'>) {
+  const user_id = await getUid()
   const { data, error } = await supabase
     .from('trades')
-    .insert(tradeToDb(trade))
+    .insert({ ...tradeToDb(trade), user_id })
     .select()
     .single()
   if (error) throw error
@@ -47,9 +54,10 @@ export async function fetchJournalEntries() {
 }
 
 export async function insertJournalEntry(entry: Omit<JournalEntry, 'id'>) {
+  const user_id = await getUid()
   const { data, error } = await supabase
     .from('journal_entries')
-    .insert({ date: entry.date, pre_market: entry.preMarket, post_market: entry.postMarket })
+    .insert({ date: entry.date, pre_market: entry.preMarket, post_market: entry.postMarket, user_id })
     .select()
     .single()
   if (error) throw error
@@ -74,7 +82,8 @@ export async function fetchRules() {
 }
 
 export async function insertRule(rule: Omit<Rule, 'id'>) {
-  const { data, error } = await supabase.from('rules').insert(rule).select().single()
+  const user_id = await getUid()
+  const { data, error } = await supabase.from('rules').insert({ ...rule, user_id }).select().single()
   if (error) throw error
   return data as Rule
 }
@@ -98,9 +107,10 @@ export async function fetchRiskSettings(): Promise<RiskSettings | null> {
 }
 
 export async function upsertRiskSettings(settings: RiskSettings) {
+  const user_id = await getUid()
   const { error } = await supabase
     .from('risk_settings')
-    .upsert(riskToDb(settings), { onConflict: 'user_id' })
+    .upsert({ ...riskToDb(settings), user_id }, { onConflict: 'user_id' })
   if (error) throw error
 }
 

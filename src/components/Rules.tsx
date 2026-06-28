@@ -103,7 +103,7 @@ export function Rules() {
           <p className="text-sm font-semibold text-white">Conformidade com o Plano</p>
           <div className="flex items-center gap-2 mt-1">
             <div className="flex-1 h-2 rounded-full" style={{ background: '#12141f' }}>
-              <div className="h-2 rounded-full" style={{ width: `${Math.round((activeCount / rules.length) * 100)}%`, background: 'linear-gradient(90deg,#6c63ff,#a78bfa)' }} />
+              <div className="h-2 rounded-full" style={{ width: `${rules.length > 0 ? Math.round((activeCount / rules.length) * 100) : 0}%`, background: 'linear-gradient(90deg,#6c63ff,#a78bfa)' }} />
             </div>
             <span className="text-sm font-bold" style={{ color: '#a78bfa' }}>{Math.round((activeCount / (rules.length || 1)) * 100)}%</span>
           </div>

@@ -212,6 +212,6 @@ function dbToRisk(r: Record<string, unknown>): RiskSettings {
     dailyTarget: Number(r.daily_target),
     dailyTargetPercent: Number(r.daily_target_percent),
     accountType: (r.account_type as 'proprio' | 'mesa') ?? 'proprio',
-    propFirmSplit: Number(r.prop_firm_split) || 80,
+    propFirmSplit: r.prop_firm_split != null ? Number(r.prop_firm_split) : 80,
   }
 }

@@ -126,19 +126,37 @@ export const useStore = create<StoreState>((set, get) => ({
   toggleRule: async (id) => {
     const rule = get().rules.find((r) => r.id === id)
     if (!rule) return
+    const prev = get().rules
     const active = !rule.active
     set((s) => ({ rules: s.rules.map((r) => (r.id === id ? { ...r, active } : r)) }))
-    await updateRuleDb(id, { active })
+    try {
+      await updateRuleDb(id, { active })
+    } catch (err) {
+      set({ rules: prev })
+      console.error('Erro ao atualizar regra:', err)
+    }
   },
 
   deleteRule: async (id) => {
+    const prev = get().rules
     set((s) => ({ rules: s.rules.filter((r) => r.id !== id) }))
-    await deleteRuleDb(id)
+    try {
+      await deleteRuleDb(id)
+    } catch (err) {
+      set({ rules: prev })
+      console.error('Erro ao deletar regra:', err)
+    }
   },
 
   updateRiskSettings: async (settings) => {
-    const next = { ...get().riskSettings, ...settings }
+    const prev = get().riskSettings
+    const next = { ...prev, ...settings }
     set({ riskSettings: next })
-    await upsertRiskSettings(next)
+    try {
+      await upsertRiskSettings(next)
+    } catch (err) {
+      set({ riskSettings: prev })
+      console.error('Erro ao salvar configurações de risco:', err)
+    }
   },
 }))
